@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FaImager</title>
+    <style>
+    
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #2b2b2b; overflow: hidden; user-select: none; }
+        .editor-container { display: flex; flex-direction: column; height: 100vh; }
+
+        /* TOOLBAR */
+        .toolbar {
+            background: #222;
+            border-bottom: 1px solid #222;
+            padding: 5px 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            color: #666;
+        }
+        .tool-btn {
+            width: 32px; height: 32px;
+            background: #555;
+            border: 1px solid #666;
+            border-radius: 4px;
+            color: #ddd;
+            font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .tool-btn:hover { background: #666; }
+        .tool-btn.active { background: #888; border-color: #666; color: #fff; }
+        .toolbar-sep { width: 1px; height: 28px; background: #555; margin: 0 4px; }
+        .color-picker { width: 40px; height: 40px; border: none; padding: 5px; cursor: pointer; background: none; }
+        #inputW, #inputH, .quality-slider { background: #999; color: #333; width: 55px; cursor: pointer; padding:5px; border: 0px solid black; }
+        .quality-value { color: #333; font-size: 12px; min-width: 15px; }
+        .tb-btn {
+            padding: 5px 10px; background: #888; color: #fff;
+            border: none; border-radius: 4px; cursor: pointer; font-size: 12px;
+        }
+        .tb-btn:hover { background: #444; }
+
+        /* MIDDLE */
+        .middle-row { display: flex; flex: 1; overflow: hidden; }
+
+        /* WORK AREA */
+        .workarea-column { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+        .workarea-bar {
+            background: #444; padding: 5px 10px;
+            display: flex; align-items: center; gap: 6px;
+            border-bottom: 1px solid #222; font-size: 12px; color: #ccc;
+        }
+        .workarea-bar input[type=number] {
+            width: 58px; padding: 3px 5px; background: #555;
+            border: 1px solid #666; border-radius: 3px; color: #fff; font-size: 12px;
+        }
+        .workarea-bar button {
+            padding: 3px 8px; background: #666; color: #fff;
+            border: none; border-radius: 3px; cursor: pointer; font-size: 12px;
+        }
+        .workarea-bar button:hover { background: #666; }
+        .canvas-scroll {
+            flex: 1; overflow: auto; background: #1e1e1e;
+            display: flex; align-items: flex-start; justify-content: flex-start; padding: 20px;
+        }
+        .canvas-wrapper {
+            position: relative; display: inline-block;
+            box-shadow: 0 0 0 1px #555, 0 4px 20px rgba(0,0,0,0.6);
+        }
+        #main-canvas { display: block; background: #fff; cursor: crosshair; }
+        .canvas-wrapper::before {
+            content: ''; position: absolute; inset: 0;
+            background-image:
+                linear-gradient(45deg,#ccc 25%,transparent 25%),
+                linear-gradient(-45deg,#ccc 25%,transparent 25%),
+                linear-gradient(45deg,transparent 75%,#ccc 75%),
+                linear-gradient(-45deg,transparent 75%,#ccc 75%);
+            background-size: 16px 16px;
+            background-position: 0 0,0 8px,8px -8px,-8px 0px;
+            background-color: #fff; z-index: -1;
+        }
+
+        /* LAYERS PANEL */
+        .layers-panel {
+            width: 200px; background: #333; border-left: 1px solid #222;
+            display: flex; flex-direction: column; flex-shrink: 0;
+        }
+        .layers-panel-header {
+            padding: 8px 10px; font-size: 13px; font-weight: bold; color: #ccc;
+            border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;
+        }
+        .layers-panel-header span { font-size: 10px; color: #777; font-weight: normal; }
+        .layers-list { flex: 1; overflow-y: auto; }
+        .layer-item {
+            display: flex; align-items: center; gap: 6px;
+            padding: 7px 8px; border-bottom: 1px solid #2a2a2a;
+            cursor: pointer; color: #ccc; font-size: 13px;
+        }
+        .layer-item:hover { background: #3d3d3d; }
+        .layer-item.active { background: #0078d7; color: #fff; }
+        .layer-vis { cursor: pointer; font-size: 14px; opacity: 0.8; flex-shrink: 0; }
+        .layer-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .layer-del {
+            background: transparent; border: none; color: #f88;
+            cursor: pointer; font-size: 15px; padding: 0 2px; line-height: 1; flex-shrink: 0;
+        }
+        .layer-del:hover { color: #f44; }
+        .layers-panel-footer {
+            padding: 8px; display: flex; gap: 6px; border-top: 1px solid #222;
+        }
+        .layers-panel-footer button {
+            flex: 1; padding: 6px; background: #555; color: #ddd;
+            border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 12px;
+        }
+        .layers-panel-footer button:hover { background: #666; }
+
+        /* MODAL */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55); z-index: 999;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: #3a3a3a; border: 1px solid #555;
+            border-radius: 6px; padding: 20px; min-width: 320px; color: #ddd;
+        }
+        .modal-box h3 { margin-bottom: 14px; font-size: 15px; }
+        .modal-box label { font-size: 13px; display: block; margin-bottom: 6px; }
+        .modal-box input[type=text], .modal-box input[type=number] {
+            width: 100%; padding: 7px 9px; background: #555;
+            border: 1px solid #666; border-radius: 4px; color: #fff;
+            font-size: 13px; margin-bottom: 12px;
+        }
+        .modal-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+        .modal-row button { padding: 6px 16px; border-radius: 4px; border: none; cursor: pointer; font-size: 13px; }
+        .btn-ok { background: #0078d7; color: #fff; }
+        .btn-ok:hover { background: #005fa3; }
+        .btn-cancel { background: #555; color: #ddd; }
+        .btn-cancel:hover { background: #666; }
+
+        /* STATUS BAR */
+        .status-bar {
+            background: #2e2e2e; border-top: 1px solid #222;
+            padding: 3px 12px; font-size: 11px; color: #888;
+            display: flex; gap: 20px;
+        }
+        .layer-item.selected { background: #005fa3; color: #fff; }
+
+    </style>
+</head>
+<body>
+<div class="editor-container">
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+        <button class="tb-btn" id="btnOpen"  title="Open PNG (Ctrl+O)">Open</button>
+        <button class="tb-btn" id="btnSave"  title="Save PNG (Ctrl+S)">Save</button>
+        <div class="toolbar-sep"></div>
+        <label title="PNG quality"><input type="number" size="4" id="qualitySlider" class="quality-slider" min="1" max="100" value="100">
+        </label>
+        <div class="toolbar-sep"></div>
+        <div class="tool-btn active" data-tool="pointer" title="Pointer (V) to drag...">✥</div>
+        <div class="tool-btn" data-tool="select"       title="Rect Select (S)">⬚</div>
+        <div class="tool-btn" data-tool="selectcircle" title="Ellipse Select (C)">⭘</div>
+        <div class="tool-btn" data-tool="eraser"       title="Eraser (E)">⌫</div>
+        <div class="tool-btn" data-tool="fill"         title="Fill (F)">▨</div>
+        <div class="tool-btn" data-tool="text"         title="Text (T)">T</div>
+        <div class="tool-btn" data-tool="rotate"       title="Rotate Layer (R)">↻</div>
+        <div class="toolbar-sep"></div>
+        <label title="Foreground color"><input type="color" id="colorPicker" class="color-picker" value="#000000">
+        </label>
+        <div class="toolbar-sep"></div>
+        <button class="tb-btn" id="btnZoomIn"  title="Zoom In (+)">+</button>
+        <button class="tb-btn" id="btnZoomOut" title="Zoom Out (-)">-</button>
+    </div>
+
+    <!-- MIDDLE -->
+    <div class="middle-row">
+
+        <!-- WORK AREA -->
+        <div class="workarea-column">
+            <div class="workarea-bar">
+                <span>Canvas:</span>
+                <input type="number" id="inputW" value="1200" min="1" max="8000">
+                <span>×</span>
+                <input type="number" id="inputH" value="700"  min="1" max="8000">
+                <span>px</span>
+                <button id="btnResize">Apply</button>
+            </div>
+            <div class="canvas-scroll" id="canvasScroll">
+                <div class="canvas-wrapper" id="canvasWrapper">
+                    <canvas id="main-canvas" width="1200" height="700"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- LAYERS PANEL -->
+        <div class="layers-panel">
+            <div class="layers-panel-header">
+                Layers <span>Mid-drag=move</span>
+            </div>
+            <div class="layers-list" id="layersList"></div>
+            <div class="layers-panel-footer">
+                <button id="btnNewLayer">+</button>
+                <button id="btnDupLayer">⧉</button>
+                <button id="btnDelLayer">X</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+        <span id="statusTool">Tool: Pointer</span>
+        <span id="statusCoords">X: 0  Y: 0</span>
+        <span id="statusSize">Canvas: 1200 × 700</span>
+        <span id="statusLayer">Layer: —</span>
+        <span id="statusRotate"></span>
+        <span id="statusZoom">Zoom: 100%</span>
+    </div>
+    
+</div>
+
+<!-- TEXT MODAL -->
+<div class="modal-overlay" id="textModal">
+    <div class="modal-box">
+        <h3>Insert Text</h3>
+        <label>Text</label>
+        <input type="text" id="textInput" placeholder="Enter your text…">
+        <label>Font size (px)</label>
+        <input type="number" id="fontSizeInput" value="24" min="4" max="400">
+        <div class="modal-row">
+            <button class="btn-cancel" id="btnTextCancel">Cancel</button>
+            <button class="btn-ok"     id="btnTextOk">Insert</button>
+        </div>
+    </div>
+</div>
+
+<!-- 
+<div id="resulting" style="background-color:#333;margin:10px;padding:10px;color:#888;z-index:9999;border:1px dashed #888;position:absolute;right: 300px;top: 100px;width:500px;height:500px;">
+   Click save, then, right click this box and "save as", or click the link.
+   <img src="" id="resultingImage" width="500" />
+</div>
+-->
+
+<script>
+
+if (typeof globalThis.ns_setupCallback !== 'function') {
+    globalThis.ns_setupCallback = () => {};
+}
+
+class Layer {
+    constructor(w, h, name) {
+        this.name    = name || 'Layer';
+        this.visible = true;
+        this.x       = 0;
+        this.y       = 0;
+        this.rotation = 0; // radians
+        this.canvas  = document.createElement('canvas');
+        this.canvas.width  = w;
+        this.canvas.height = h;
+        this.ctx = this.canvas.getContext('2d');
+    }
+    resize(w, h) {
+        const old = this.canvas;
+        this.canvas = document.createElement('canvas');
+        this.canvas.width  = w;
+        this.canvas.height = h;
+        this.ctx = this.canvas.getContext('2d');
+        this.ctx.drawImage(old, 0, 0);
+    }
+}
+
+class Editor {
+    constructor() {
+        this.mainCanvas = document.getElementById('main-canvas');
+        this.mainCtx    = this.mainCanvas.getContext('2d');
+
+        this.layers    = [];
+        this.activeIdx = -1;
+        this.tool      = 'pointer';
+        this.color     = '#000000';
+        this.quality   = 1.0;
+
+        // Rect selection
+        this.sel        = null;
+        this.selDrawing = false;
+        this.selStartX  = 0;
+        this.selStartY  = 0;
+        this.selectedLayers = []; 
+        
+        this.zoomLevel = 1.0;  // NEW: Zoom level
+
+        // Undo stack
+        this.undoStack = [];
+        this.maxUndoSteps = 10;
+        
+        // Circle selection
+        this.selCircle        = null; // {cx,cy,rx,ry}
+        this.selCircleDrawing = false;
+        this.selCircleStartX  = 0;
+        this.selCircleStartY  = 0;
+
+        this.clipboard = null;
+
+        this.eraserDrawing = false;
+        this.eraserSize    = 12;
+
+        // Layer drag (middle mouse)
+        this.dragLayer = null;
+        this.dragOffX  = 0;
+        this.dragOffY  = 0;
+
+        // Rotate
+        this.rotateActive  = false;  // holding left button on rotate tool
+        this.rotateDragX   = 0;      // last X for drag-rotate
+        this.rotateInterval = null;
+
+        this.textPending = null;
+
+        this._init();
+    }
+
+    get activeLayer() { return this.layers[this.activeIdx] || null; }
+
+    _init() {
+        this._addLayer('Background');
+        this._bindToolbar();
+        this._bindCanvas();
+        this._bindKeys();
+        this._bindUI();
+        this._render();
+    }
+
+    _addLayer(name) {
+    this.saveState();
+        const w = this.mainCanvas.width;
+        const h = this.mainCanvas.height;
+        const l = new Layer(w, h, name || `Layer ${this.layers.length + 1}`);
+        this.layers.push(l);
+        this.activeIdx = this.layers.length - 1;
+        this._refreshLayersPanel();
+        return l;
+    }
+
+    _deleteLayer(idx) {
+    this.saveState();
+        if (this.layers.length <= 1) return;
+        this.layers.splice(idx, 1);
+        this.activeIdx = Math.min(this.activeIdx, this.layers.length - 1);
+        this._refreshLayersPanel();
+        this._render();
+    }
+
+    _duplicateLayer(idx) {
+    this.saveState();
+        const src = this.layers[idx];
+        if (!src) return;
+        const nl = new Layer(src.canvas.width, src.canvas.height, src.name + ' copy');
+        nl.x        = src.x + 10;
+        nl.y        = src.y + 10;
+        nl.rotation = src.rotation;
+        nl.visible  = src.visible;
+        nl.ctx.drawImage(src.canvas, 0, 0);
+        this.layers.splice(idx + 1, 0, nl);
+        this.activeIdx = idx + 1;
+        this._refreshLayersPanel();
+        this._render();
+    }
+
+    _refreshLayersPanel() {
+        const list = document.getElementById('layersList');
+        list.innerHTML = '';
+        for (let i = this.layers.length - 1; i >= 0; i--) {
+            const l = this.layers[i];
+            const item = document.createElement('div');
+            item.className = 'layer-item' + (i === this.activeIdx ? ' active' : '');
+
+            const vis = document.createElement('span');
+            vis.className = 'layer-vis';
+            vis.textContent = l.visible ? '👁' : 'X';
+            vis.title = 'Toggle visibility';
+            vis.addEventListener('click', e => {
+                e.stopPropagation();
+                l.visible = !l.visible;
+                vis.textContent = l.visible ? '👁' : 'X';
+                this._render();
+            });
+
+            const name = document.createElement('span');
+            name.className = 'layer-name';
+            name.textContent = l.name;
+
+            const del = document.createElement('button');
+            del.className = 'layer-del';
+            del.textContent = '×';
+            del.title = 'Delete layer';
+            del.addEventListener('click', e => { e.stopPropagation(); this._deleteLayer(i); });
+
+            item.append(vis, name, del);
+            // In _refreshLayersPanel(), when creating layer items:
+            item.addEventListener('click', e => {
+                if (e.ctrlKey) {
+                    // Multi-select with Ctrl+click
+                    const idx = this.layers.length - 1 - Array.from(list.children).indexOf(item);
+                    const selIdx = this.selectedLayers.indexOf(idx);
+                    
+                    if (selIdx >= 0) {
+                        // Deselect
+                        this.selectedLayers.splice(selIdx, 1);
+                        item.classList.remove('selected');
+                    } else {
+                        // Select
+                        this.selectedLayers.push(idx);
+                        item.classList.add('selected');
+                    }
+                    this._render();
+                } else {
+                    // Single select
+                    this.activeIdx = this.layers.length - 1 - Array.from(list.children).indexOf(item);
+                    this.selectedLayers = [this.activeIdx];
+                    this._refreshLayersPanel();
+                    this._render();
+                }
+            });
+
+            list.appendChild(item);
+        }
+        this._updateStatus();
+    }
+
+    _render() {
+        // Clear main canvas
+        this.mainCtx.clearRect(0, 0, this.mainCanvas.width, this.mainCanvas.height);
+        
+        // Apply zoom transformation
+        this.mainCtx.save();
+        this.mainCtx.scale(this.zoomLevel, this.zoomLevel);
+        
+        // Draw all visible layers
+        for (let i = this.layers.length - 1; i >= 0; i--) {
+            const l = this.layers[i];
+            if (!l.visible) continue;
+            
+            this.mainCtx.save();
+            this.mainCtx.translate(l.x, l.y);
+            if (l.rotation) this.mainCtx.rotate(l.rotation);
+            
+            this.mainCtx.drawImage(l.canvas, 0, 0);
+            
+            this.mainCtx.restore();
+        }
+        
+        // Draw selection if active
+        if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+            this.mainCtx.strokeStyle = 'rgba(0, 120, 215, 0.7)';
+            this.mainCtx.lineWidth = 2 / this.zoomLevel;
+            this.mainCtx.setLineDash([5, 5]);
+            this.mainCtx.strokeRect(
+                this.sel.x - 0.5, this.sel.y - 0.5,
+                this.sel.w, this.sel.h
+            );
+            this.mainCtx.setLineDash([]);
+        }
+        
+        // Draw circle selection if active
+        if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
+            this.mainCtx.strokeStyle = 'rgba(0, 120, 215, 0.7)';
+            this.mainCtx.lineWidth = 2 / this.zoomLevel;
+            this.mainCtx.beginPath();
+            this.mainCtx.ellipse(
+                this.selCircle.cx, this.selCircle.cy,
+                this.selCircle.rx, this.selCircle.ry,
+                0, 0, Math.PI * 2
+            );
+            this.mainCtx.stroke();
+        }
+        
+        this.mainCtx.restore();
+        
+        this._updateStatus();
+    }
+
+
+    _resizeCanvas(w, h) {
+    this.saveState();
+        this.mainCanvas.width  = w;
+        this.mainCanvas.height = h;
+        this.layers.forEach(l => l.resize(w, h));
+        document.getElementById('statusSize').textContent = `Canvas: ${w} × ${h}`;
+        this._render();
+    }
+
+    _floodFill(layer, px, py, color) {
+    this.saveState();
+        const ctx   = layer.ctx;
+        const W     = layer.canvas.width;
+        const H     = layer.canvas.height;
+        const idata = ctx.getImageData(0, 0, W, H);
+        const data  = idata.data;
+
+        const hex2rgb = h => {
+            const v = parseInt(h.replace('#',''), 16);
+            return [(v>>16)&255, (v>>8)&255, v&255];
+        };
+        const [fr, fg, fb] = hex2rgb(color);
+        const fa = 255;
+
+        const idx = (py * W + px) * 4;
+        const tr  = data[idx], tg = data[idx+1], tb = data[idx+2], ta = data[idx+3];
+
+        if (tr===fr && tg===fg && tb===fb && ta===fa) return;
+
+        const match = i => data[i]===tr && data[i+1]===tg && data[i+2]===tb && data[i+3]===ta;
+        const paint = i => { data[i]=fr; data[i+1]=fg; data[i+2]=fb; data[i+3]=fa; };
+
+        const stack = [idx];
+        const seen  = new Uint8Array(W * H);
+        seen[idx/4]  = 1;
+
+        while (stack.length) {
+            const ci = stack.pop();
+            paint(ci);
+            const pos = ci / 4;
+            const cx  = pos % W | 0;
+            const cy  = pos / W | 0;
+            const neighbors = [
+                cx>0   ? [cx-1,cy] : null,
+                cx<W-1 ? [cx+1,cy] : null,
+                cy>0   ? [cx,cy-1] : null,
+                cy<H-1 ? [cx,cy+1] : null
+            ];
+            for (const n of neighbors) {
+                if (!n) continue;
+                const ni = n[1]*W + n[0];
+                if (seen[ni]) continue;
+                seen[ni] = 1;
+                const pi = ni*4;
+                if (match(pi)) stack.push(pi);
+            }
+        }
+        ctx.putImageData(idata, 0, 0);
+        this.sel        = null;
+        this.selCircle  = null;
+        this._render();
+    }
+
+    _normalizeRect(x1,y1,x2,y2) {
+        return { x: Math.min(x1,x2), y: Math.min(y1,y2), w: Math.abs(x2-x1), h: Math.abs(y2-y1) };
+    }
+
+    _copySelection() {
+        const l = this.activeLayer; if (!l) return;
+
+        if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
+            const {cx, cy, rx, ry} = this.selCircle;
+            const bx = Math.floor(cx - rx), by = Math.floor(cy - ry);
+            const bw = Math.ceil(rx * 2),   bh = Math.ceil(ry * 2);
+            const tmp = document.createElement('canvas');
+            tmp.width = bw; tmp.height = bh;
+            const tc = tmp.getContext('2d');
+            tc.save();
+            tc.beginPath();
+            tc.ellipse(rx, ry, rx, ry, 0, 0, Math.PI * 2);
+            tc.clip();
+            tc.drawImage(l.canvas, -bx, -by);
+            tc.restore();
+            this.clipboard = { type: 'canvas', canvas: tmp };
+        } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+            this.clipboard = {
+                type: 'imagedata',
+                data: l.ctx.getImageData(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h),
+                w: this.sel.w, h: this.sel.h
+            };
+        }
+    }
+
+    _pasteClipboard() {
+    this.saveState();
+        if (!this.clipboard) return;
+        const nl = this._addLayer('Pasted');
+        if (this.clipboard.type === 'canvas') {
+            nl.canvas.width  = this.clipboard.canvas.width;
+            nl.canvas.height = this.clipboard.canvas.height;
+            nl.ctx = nl.canvas.getContext('2d');
+            nl.ctx.drawImage(this.clipboard.canvas, 0, 0);
+        } else {
+            nl.ctx.putImageData(this.clipboard.data, 0, 0);
+        }
+        this._render();
+    }
+
+    _cutSelection() {
+    this.saveState();
+        const l = this.activeLayer; if (!l) return;
+        this._copySelection();
+
+        if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
+            const {cx, cy, rx, ry} = this.selCircle;
+            l.ctx.save();
+            // Clear only inside the ellipse
+            l.ctx.globalCompositeOperation = 'destination-out';
+            l.ctx.beginPath();
+            l.ctx.ellipse(cx - l.x, cy - l.y, rx, ry, 0, 0, Math.PI * 2);
+            l.ctx.fill();
+            l.ctx.restore();
+            this.selCircle = null;
+        } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+            l.ctx.clearRect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
+            this.sel = null;
+        }
+        this._render();
+    }
+
+    _mergeLayers() {
+    this.saveState();
+        const w = this.mainCanvas.width;
+        const h = this.mainCanvas.height;
+        const merged = new Layer(w, h, 'Merged');
+        this.layers.forEach(l => {
+            if (!l.visible) return;
+            merged.ctx.save();
+            const cx = l.x + l.canvas.width  / 2;
+            const cy = l.y + l.canvas.height / 2;
+            merged.ctx.translate(cx, cy);
+            merged.ctx.rotate(l.rotation);
+            merged.ctx.drawImage(l.canvas, -l.canvas.width / 2, -l.canvas.height / 2);
+            merged.ctx.restore();
+        });
+        this.layers    = [merged];
+        this.activeIdx = 0;
+        this._refreshLayersPanel();
+        this._render();
+    }
+
+    _startContinuousRotate() {
+        this._stopContinuousRotate();
+        this.rotateInterval = setInterval(() => {
+            const l = this.activeLayer; if (!l) return;
+            l.rotation += 0.02; // ~1.1 deg per frame
+            document.getElementById('statusRotate').textContent =
+                `Rotation: ${Math.round(l.rotation * 180 / Math.PI)}°`;
+            this._render();
+        }, 16);
+    }
+    _stopContinuousRotate() {
+    
+        if (this.rotateInterval) { clearInterval(this.rotateInterval); this.rotateInterval = null; }
+    }
+
+    _canvasXY(e) {
+        const r = this.mainCanvas.getBoundingClientRect();
+        return { x: Math.round(e.clientX - r.left), y: Math.round(e.clientY - r.top) };
+    }
+
+    _bindCanvas() {
+        const cv = this.mainCanvas;
+        cv.addEventListener('contextmenu', e => e.preventDefault());
+
+        cv.addEventListener('mousedown', e => {
+            const {x, y} = this._canvasXY(e);
+
+            /* Middle mouse = drag active layer */
+            if (e.button === 1) {
+                e.preventDefault();
+                const l = this.activeLayer; if (!l) return;
+                this.dragLayer = l;
+                this.dragOffX  = x - l.x;
+                this.dragOffY  = y - l.y;
+                return;
+            }
+
+            if (e.button !== 0) return;
+
+            switch (this.tool) {
+
+                case 'select':
+                    this.selCircle   = null;
+                    this.selDrawing  = true;
+                    this.selStartX   = x;
+                    this.selStartY   = y;
+                    this.sel         = { x, y, w: 0, h: 0 };
+                    break;
+
+                case 'selectcircle':
+                    this.sel               = null;
+                    this.selCircleDrawing  = true;
+                    this.selCircleStartX   = x;
+                    this.selCircleStartY   = y;
+                    this.selCircle         = { cx: x, cy: y, rx: 0, ry: 0 };
+                    break;
+
+                case 'eraser':
+                    this.eraserDrawing = true;
+                    this._erase(x, y);
+                    break;
+
+                case 'fill': {
+                    const l = this.activeLayer; if (!l) return;
+                    const px = x - l.x, py = y - l.y;
+
+                    if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
+                        const {cx, cy, rx, ry} = this.selCircle;
+                        l.ctx.save();
+                        l.ctx.beginPath();
+                        l.ctx.ellipse(cx - l.x, cy - l.y, rx, ry, 0, 0, Math.PI * 2);
+                        l.ctx.clip();
+                        l.ctx.fillStyle = this.color;
+                        l.ctx.fill();
+                        l.ctx.restore();
+                        this.selCircle = null;
+                        this._render();
+                    } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+                        l.ctx.save();
+                        l.ctx.beginPath();
+                        l.ctx.rect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
+                        l.ctx.clip();
+                        l.ctx.fillStyle = this.color;
+                        l.ctx.fillRect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
+                        l.ctx.restore();
+                        this.sel = null;
+                        this._render();
+                    } else {
+                        this._floodFill(l, px, py, this.color);
+                    }
+                    break;
+                }
+
+                case 'text':
+                    this.textPending = {x, y};
+                    this._openTextModal();
+                    break;
+
+                case 'rotate': {
+                    this.rotateActive = true;
+                    this.rotateDragX  = x;
+                    this._startContinuousRotate();
+                    break;
+                }
+            }
+        });
+
+        cv.addEventListener('mousemove', e => {
+            const {x, y} = this._canvasXY(e);
+            document.getElementById('statusCoords').textContent = `X: ${x}  Y: ${y}`;
+
+            if (this.dragLayer) {
+                this.dragLayer.x = x - this.dragOffX;
+                this.dragLayer.y = y - this.dragOffY;
+                this._render();
+                return;
+            }
+
+            if (this.selDrawing && this.tool === 'select') {
+                this.sel = this._normalizeRect(this.selStartX, this.selStartY, x, y);
+                this._render();
+                return;
+            }
+
+            if (this.selCircleDrawing && this.tool === 'selectcircle') {
+                const rx = Math.abs(x - this.selCircleStartX) / 2;
+                const ry = Math.abs(y - this.selCircleStartY) / 2;
+                const cx = (x + this.selCircleStartX) / 2;
+                const cy = (y + this.selCircleStartY) / 2;
+                this.selCircle = { cx, cy, rx, ry };
+                this._render();
+                return;
+            }
+
+            if (this.eraserDrawing && this.tool === 'eraser') {
+                this._erase(x, y);
+                return;
+            }
+
+            // Rotate drag: dragging right = clockwise, left = counter
+            if (this.rotateActive && this.tool === 'rotate') {
+                this._stopContinuousRotate(); // switch to drag mode
+                const l = this.activeLayer; if (!l) return;
+                const dx = x - this.rotateDragX;
+                l.rotation += dx * 0.01;
+                this.rotateDragX = x;
+                document.getElementById('statusRotate').textContent =
+                    `Rotation: ${Math.round(l.rotation * 180 / Math.PI)}°`;
+                this._render();
+            }
+        });
+
+        const stopAll = () => {
+            this.dragLayer         = null;
+            this.selDrawing        = false;
+            this.selCircleDrawing  = false;
+            this.eraserDrawing     = false;
+            if (this.rotateActive) {
+                this._stopContinuousRotate();
+                this.rotateActive = false;
+            }
+        };
+        cv.addEventListener('mouseup',    stopAll);
+        cv.addEventListener('mouseleave', stopAll);
+    }
+
+    _erase(x, y) {
+    this.saveState();
+        const l = this.activeLayer; if (!l) return;
+        const px = x - l.x, py = y - l.y;
+        const s  = this.eraserSize;
+        l.ctx.clearRect(px - s/2, py - s/2, s, s);
+        this._render();
+    }
+
+    _openTextModal() {
+        document.getElementById('textModal').classList.add('open');
+        document.getElementById('textInput').value = '';
+        document.getElementById('textInput').focus();
+    }
+    _closeTextModal() {
+        document.getElementById('textModal').classList.remove('open');
+    }
+    
+    _insertText() {
+        this.saveState();
+        const text = document.getElementById('textInput').value.trim();
+        const size = parseInt(document.getElementById('fontSizeInput').value) || 24;
+        if (!text || !this.textPending) { this._closeTextModal(); return; }
+
+        const {x, y} = this.textPending;
+        this.textPending = null;
+
+        /* 1. Measure text accurately */
+        const tmp = document.createElement('canvas').getContext('2d');
+        tmp.font = `${size}px Arial, sans-serif`; // Chrome likes explicit bold/regular
+        const metrics = tmp.measureText(text);
+        const tw = Math.ceil(metrics.width) * 124; // generous padding
+        const th = size + 24; // extra headroom
+
+        /* 2. Create layer */
+        const nl = this._addLayer(`Text: "${text.slice(0,12)}"`);
+        nl.canvas.width  = tw;
+        nl.canvas.height = th;
+        nl.ctx = nl.canvas.getContext('2d');
+
+        /* 3. Draw centered */
+        nl.ctx.font         = `${size}px Arial, sans-serif`;
+        nl.ctx.fillStyle    = this.color;
+        nl.ctx.textBaseline = 'middle';
+        nl.ctx.textAlign    = 'left';
+        nl.ctx.fillText(text, tw/2, th/2);
+
+        /* 4. Position layer so the click point is the text center */
+        nl.x = x - tw/2;
+        nl.y = y - th/2;
+
+        this._closeTextModal();
+        this._render();
+    }
+
+    _openFile() {
+        const inp = document.createElement('input');
+        inp.type   = 'file';
+        inp.accept = 'image/png,image/*';
+        inp.onchange = () => {
+            const file = inp.files[0]; if (!file) return;
+            const url  = URL.createObjectURL(file);
+            const img  = new Image();
+            img.onload = () => {
+                const nl = this._addLayer(file.name);
+                nl.ctx.drawImage(img, 0, 0, nl.canvas.width, nl.canvas.height);
+                URL.revokeObjectURL(url);
+                this._render();
+            };
+            img.src = url;
+        };
+        inp.click();
+    }
+
+    _saveFile() {
+        try {
+            const data = this.mainCanvas.toDataURL('image/png');
+            
+            // Display image
+            // document.getElementById('resultingImage').src = data;
+            
+            // Download
+            const blob = this.dataURLtoBlob(data);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = 'image.png';
+            link.href = url;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch(e) {
+            document.write(e.message);
+        }
+    }
+
+    dataURLtoBlob(dataURL) {
+        const [header, data] = dataURL.split(',');
+        const mime = header.match(/:(.*?);/)[1];
+        const binary = atob(data);
+        const arr = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            arr[i] = binary.charCodeAt(i);
+        }
+        return new Blob([arr], { type: mime });
+    }
+
+    _bindToolbar() {
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.tool = btn.dataset.tool;
+                this._stopContinuousRotate();
+                this.rotateActive = false;
+
+                const cursors = {
+                    pointer: 'default', select: 'crosshair', selectcircle: 'crosshair',
+                    eraser: 'cell', fill: 'crosshair', text: 'text', rotate: 'grab'
+                };
+                this.mainCanvas.style.cursor = cursors[this.tool] || 'crosshair';
+                document.getElementById('statusTool').textContent = `Tool: ${btn.title.split(' (')[0]}`;
+            });
+        });
+
+        document.getElementById('colorPicker').addEventListener('input', e => {
+            this.color = e.target.value;
+        });
+        document.getElementById('qualitySlider').addEventListener('input', e => {
+            this.quality = e.target.value / 100;
+            //document.getElementById('qualityVal').textContent = e.target.value + '%';
+        });
+        document.getElementById('btnZoomIn').addEventListener('click', () => this.zoomIn());
+        document.getElementById('btnZoomOut').addEventListener('click', () => this.zoomOut());
+
+    }
+
+    _bindKeys() {
+        document.addEventListener('keydown', e => {
+            if (document.getElementById('textModal').classList.contains('open')) return;
+
+            if (e.ctrlKey) {
+                switch(e.key.toLowerCase()) {
+                case 'o': e.preventDefault(); this._openFile();       break;
+                case 's': e.preventDefault(); this._saveFile();       break;
+                case 'c': e.preventDefault(); this._copySelection();  break;
+                case 'v': e.preventDefault(); this._pasteClipboard(); break;
+                case 'x': e.preventDefault(); this._cutSelection();   break;
+                case 'z': e.preventDefault(); this.undo();            break;
+                case 'e': e.preventDefault(); this._mergeSelectedLayers(); break;
+                case 'a':
+                    e.preventDefault();
+                    this.sel = {x:0, y:0, w:this.mainCanvas.width, h:this.mainCanvas.height};
+                    document.querySelector('[data-tool="select"]').click();
+                    this._render();
+                    break;
+                }
+                return;
+            }
+
+            switch(e.key.toLowerCase()) {
+                case 'v': document.querySelector('[data-tool="pointer"]').click();      break;
+                case 's': document.querySelector('[data-tool="select"]').click();       break;
+                case 'c': document.querySelector('[data-tool="selectcircle"]').click(); break;
+                case 'e': document.querySelector('[data-tool="eraser"]').click();       break;
+                case 'f': document.querySelector('[data-tool="fill"]').click();         break;
+                case 't': document.querySelector('[data-tool="text"]').click();         break;
+                case 'r': document.querySelector('[data-tool="rotate"]').click();       break;
+                case 'escape':
+                    this.sel       = null;
+                    this.selCircle = null;
+                    this._render();
+                    break;
+            }
+        });
+    }
+
+    _bindUI() {
+        document.getElementById('btnOpen').addEventListener('click', () => this._openFile());
+        document.getElementById('btnSave').addEventListener('click', () => this._saveFile());
+
+        document.getElementById('btnResize').addEventListener('click', () => {
+            const w = parseInt(document.getElementById('inputW').value);
+            const h = parseInt(document.getElementById('inputH').value);
+            if (w > 0 && h > 0) this._resizeCanvas(w, h);
+        });
+
+        document.getElementById('btnDupLayer').addEventListener('click', () => {
+            if (this.activeIdx >= 0) this._duplicateLayer(this.activeIdx);
+        });
+
+        document.getElementById('btnNewLayer').addEventListener('click', () => this._addLayer());
+        document.getElementById('btnDelLayer').addEventListener('click', () => this._deleteLayer(this.activeIdx));
+
+        document.getElementById('btnTextOk').addEventListener('click',    () => this._insertText());
+        document.getElementById('btnTextCancel').addEventListener('click', () => { this.textPending = null; this._closeTextModal(); });
+        document.getElementById('textInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter')  this._insertText();
+            if (e.key === 'Escape') { this.textPending = null; this._closeTextModal(); }
+        });
+    }
+
+    _updateStatus() {
+        const l = this.activeLayer;
+        document.getElementById('statusLayer').textContent = l ? `Layer: ${l.name}` : 'Layer: —';
+        document.getElementById('statusRotate').textContent = this.rotateInterval
+            ? `Rotation: ${Math.round((this.activeLayer?.rotation || 0) * 180 / Math.PI)}°`
+            : '';
+        
+        // Add zoom level to status
+        document.getElementById('statusZoom').textContent = `Zoom: ${Math.round(this.zoomLevel * 100)}%`;
+    }
+    
+    // NEW: Zoom methods
+    setZoom(level) {
+        this.zoomLevel = Math.max(0.1, Math.min(10, level));
+        this._updateStatus();
+        this._render();
+    }
+
+    zoomIn() {
+        this.setZoom(this.zoomLevel * 1.2);
+    }
+
+    zoomOut() {
+        this.setZoom(this.zoomLevel / 1.2);
+    }
+
+    // NEW: Canvas coordinate conversion with zoom
+    _canvasXY(e) {
+        const r = this.mainCanvas.getBoundingClientRect();
+        const x = (e.clientX - r.left) / this.zoomLevel;
+        const y = (e.clientY - r.top) / this.zoomLevel;
+        return { x: Math.round(x), y: Math.round(y) };
+    }
+
+    // NEW: Undo functionality
+    saveState() {
+        // Save current state to undo stack
+        const state = {
+            layers: this.layers.map(layer => {
+                const copy = new Layer(layer.canvas.width, layer.canvas.height, layer.name);
+                copy.visible = layer.visible;
+                copy.x = layer.x;
+                copy.y = layer.y;
+                copy.rotation = layer.rotation;
+                copy.ctx = copy.canvas.getContext('2d');
+                copy.ctx.drawImage(layer.canvas, 0, 0);
+                return copy;
+            }),
+            activeIdx: this.activeIdx,
+            tool: this.tool,
+            color: this.color,
+            zoomLevel: this.zoomLevel
+        };
+        
+        this.undoStack.push(state);
+        
+        // Limit stack size
+        if (this.undoStack.length > this.maxUndoSteps) {
+            this.undoStack.shift();
+        }
+    }
+
+    undo() {
+        if (this.undoStack.length === 0) return;
+        
+        const state = this.undoStack.pop();
+        
+        // Restore state
+        this.layers = state.layers;
+        this.activeIdx = state.activeIdx;
+        this.tool = state.tool;
+        this.color = state.color;
+        this.zoomLevel = state.zoomLevel;
+        
+        this._refreshLayersPanel();
+        this._render();
+        this._updateStatus();
+    }
+
+    _mergeSelectedLayers() {
+        if (this.layers.length <= 1) return;
+
+        // Ensure we have selected layers
+        if (!this.selectedLayers || this.selectedLayers.length < 2) {
+            alert('Please select 2 or more layers to merge (Ctrl+click to select)');
+            return;
+        }
+
+        this.saveState(true); // Force save state for undo
+
+        // Sort selected indices to maintain order
+        const selectedIndices = [...this.selectedLayers].sort((a, b) => a - b);
+        const firstIdx = selectedIndices[0];
+
+        // Create merged layer with same dimensions as canvas
+        const mergedLayer = new Layer(this.mainCanvas.width, this.mainCanvas.height, 'Merged');
+
+        // Draw each selected layer onto the merged layer
+        selectedIndices.forEach(idx => {
+            const layer = this.layers[idx];
+            if (!layer) return;
+
+            // Save merged layer context
+            mergedLayer.ctx.save();
+
+            // Position and rotate the layer correctly
+            mergedLayer.ctx.translate(layer.x + layer.canvas.width / 2,
+                                     layer.y + layer.canvas.height / 2);
+            mergedLayer.ctx.rotate(layer.rotation);
+            mergedLayer.ctx.drawImage(layer.canvas,
+                                     -layer.canvas.width / 2,
+                                     -layer.canvas.height / 2);
+
+            mergedLayer.ctx.restore();
+        });
+
+        // Replace the selected layers with the merged layer
+        this.layers = [
+            ...this.layers.slice(0, firstIdx),
+            mergedLayer,
+            ...this.layers.slice(firstIdx + selectedIndices.length)
+        ];
+
+        // Update active layer and clear selection
+        this.activeIdx = firstIdx;
+        this.selectedLayers = [];
+        this._refreshLayersPanel();
+        this._render();
+
+        console.log(`Merged ${selectedIndices.length} layers into one`);
+    }
+
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    try { window._editor = new Editor(); }
+    catch(err) { console.error('Editor failed to start:', err); }
+});
+</script>
+</body>
+</html>
