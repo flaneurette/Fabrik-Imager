@@ -1,2 +1,2 @@
-# Fa-Imager
+# FA-Imager
 A simple PNG graphic editor
