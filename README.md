@@ -1,2 +1,2 @@
-# Fa Imager
+# Fabrik Imager
 A simple PNG image editor
