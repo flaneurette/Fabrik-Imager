@@ -13,7 +13,10 @@ Menu:
 - Circles
 - Fill/Bucket
 - Color picker
-- Zoom function.
+- Zoom +/-
+- Text (Arial only)
+- Eraser
+- Rotate layers
 - Filesize
 
 Right menu:
@@ -22,5 +25,8 @@ Layers
 - add layer
 - delete layer
 - merge layers
+- dupe layer
 
 Most popular shortcuts: ctrl+e to merge layers, crtl+c to copy layer, ctrl+v to paste.
+
+TIP: Use middle mouse button to drag layers, or items around
