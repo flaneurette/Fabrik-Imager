@@ -16,7 +16,7 @@ Menu:
 - Zoom +/-
 - Text (Arial only)
 - Eraser
-- Rotate layers
+- Rotate layers (left mouse button to rotate)
 - Filesize
 
 Right menu:
