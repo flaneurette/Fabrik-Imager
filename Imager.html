@@ -158,7 +158,9 @@
     <!-- TOOLBAR -->
     <div class="toolbar">
         <button class="tb-btn" id="btnOpen"  title="Open PNG (Ctrl+O)">Open</button>
-        <button class="tb-btn" id="btnSave"  title="Save PNG (Ctrl+S)">Save</button>
+        <button class="tb-btn" id="btnSave"  title="Save PNG (Ctrl+S)">Save as PNG</button>
+        <button class="tb-btn" id="btnSaveSel">Save selection</button>
+        
         <div class="toolbar-sep"></div>
         <label title="PNG quality"><input type="number" size="4" id="qualitySlider" class="quality-slider" min="1" max="100" value="100">
         </label>
@@ -176,6 +178,9 @@
         <div class="toolbar-sep"></div>
         <button class="tb-btn" id="btnZoomIn"  title="Zoom In (+)">+</button>
         <button class="tb-btn" id="btnZoomOut" title="Zoom Out (-)">-</button>
+        <div class="toolbar-sep"></div>
+        <input type="number" id="resizePercent" class="quality-slider" min="1" max="1000" value="100" size="3" title="Resize layer percentage">
+        <button class="tb-btn" id="btnResizeLayer" title="Resize active layer">% Resize layer</button>
     </div>
 
     <!-- MIDDLE -->
@@ -184,7 +189,7 @@
         <!-- WORK AREA -->
         <div class="workarea-column">
             <div class="workarea-bar">
-                <span>Canvas:</span>
+                <span>Canvas size:</span>
                 <input type="number" id="inputW" value="1200" min="1" max="8000">
                 <span>×</span>
                 <input type="number" id="inputH" value="700"  min="1" max="8000">
@@ -578,6 +583,42 @@ class Editor {
             };
         }
     }
+    
+    _saveSelectionAsImage() {
+        if (!this.sel || this.sel.w <= 0 || this.sel.h <= 0) {
+            alert('No rectangular area selected!');
+            return;
+        }
+
+        const l = this.activeLayer;
+        if (!l) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = this.sel.w;
+        canvas.height = this.sel.h;
+        const ctx = canvas.getContext('2d');
+
+        // Draw only the selected portion
+        ctx.drawImage(
+            l.canvas,
+            this.sel.x - l.x, this.sel.y - l.y,  // source position
+            this.sel.w, this.sel.h,               // source size
+            0, 0,                                 // destination position
+            this.sel.w, this.sel.h                // destination size
+        );
+
+        // Use the temporary canvas instead of this.canvas
+        const data = canvas.toDataURL('image/png');
+        const blob = this.dataURLtoBlob(data);
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `selection_${Date.now()}.png`;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
 
     _pasteClipboard() {
     this.saveState();
@@ -857,6 +898,36 @@ class Editor {
         this._closeTextModal();
         this._render();
     }
+    
+    _resizeLayerPercent(layer, percent) {
+        this.saveState();
+
+        // Get current dimensions
+        const originalWidth = layer.canvas.width;
+        const originalHeight = layer.canvas.height;
+
+        // Calculate new dimensions
+        const newWidth = Math.round(originalWidth * (percent / 100));
+        const newHeight = Math.round(originalHeight * (percent / 100));
+
+        // Create temporary canvas to preserve content
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = originalWidth;
+        tempCanvas.height = originalHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(layer.canvas, 0, 0);
+
+        // Resize the layer's canvas
+        layer.canvas.width = newWidth;
+        layer.canvas.height = newHeight;
+        layer.ctx = layer.canvas.getContext('2d');
+
+        // Draw the preserved content at the new size
+        layer.ctx.drawImage(tempCanvas, 0, 0, newWidth, newHeight);
+
+        this._render();
+        this._refreshLayersPanel();
+    }
 
     _openFile() {
         const inp = document.createElement('input');
@@ -868,7 +939,10 @@ class Editor {
             const img  = new Image();
             img.onload = () => {
                 const nl = this._addLayer(file.name);
-                nl.ctx.drawImage(img, 0, 0, nl.canvas.width, nl.canvas.height);
+                // Set canvas dimensions to match image
+                nl.canvas.width = img.width;
+                nl.canvas.height = img.height;
+                nl.ctx.drawImage(img, 0, 0);
                 URL.revokeObjectURL(url);
                 this._render();
             };
@@ -888,7 +962,7 @@ class Editor {
             const blob = this.dataURLtoBlob(data);
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.download = 'image.png';
+            link.download = `image_${Date.now()}.png`;
             link.href = url;
             document.body.appendChild(link);
             link.click();
@@ -937,7 +1011,26 @@ class Editor {
         });
         document.getElementById('btnZoomIn').addEventListener('click', () => this.zoomIn());
         document.getElementById('btnZoomOut').addEventListener('click', () => this.zoomOut());
+        
+        document.getElementById('btnResizeLayer').addEventListener('click', () => {
+            const layer = this.activeLayer;
+            if (!layer) {
+                alert("No active layer to resize");
+                return;
+            }
 
+            const percent = parseFloat(document.getElementById('resizePercent').value);
+            if (percent <= 0) {
+                alert("Percentage must be greater than 0");
+                return;
+            }
+
+            this._resizeLayerPercent(layer, percent);
+        });
+ 
+        document.getElementById('btnSaveSel').addEventListener('click', () => {
+            this._saveSelectionAsImage();
+        });
     }
 
     _bindKeys() {
