@@ -28,6 +28,6 @@ Layers
 - merge layers
 - dupe layer
 
-Most popular shortcuts: ctrl+e to merge layers, crtl+c to copy layer, ctrl+v to paste.
+Most popular shortcuts: ctrl+e to merge layers, crtl+c to copy layer, ctrl+v to paste, ctrl+x to cut a layer.
 
 TIP: Use middle mouse button to drag layers, or items around
