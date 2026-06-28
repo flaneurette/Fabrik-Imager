@@ -158,7 +158,15 @@
             display: flex; gap: 20px;
         }
         .layer-item.selected { background: #005fa3; color: #fff; }
-
+        .option-sep {
+            background-color:#fff;
+            color:#000;
+        }
+        .option-sep: hover {
+            background-color:#fff;
+            color:#000;
+        }
+        
     </style>
 </head>
 <body>
@@ -192,7 +200,7 @@
         <small>Layer Size:</small><input type="number" id="resizePercent" class="quality-slider" min="1" max="1000" value="100" size="3" title="Resize layer percentage">%
         <button class="tb-btn" id="btnResizeLayer" title="Resize active layer">Resize layer</button>
         <select class="tb-btn" id="effects"  title="Effects">
-            <option value="">Choose effect</option>
+            <option value="" class="option-sep">Layer effect</option>
             <option value="blur">Blur</option>
             <option value="dropshadow">Drop shadow</option>
             <option value="brightness">Brightness</option>
@@ -204,7 +212,7 @@
             <option value="opacity">Opacity</option>
             <option value="saturate">Saturate</option>
             <option value="sepia">Sepia</option>
-            <option value="">+++++ fabrik filters (slow!) +++++</option>
+            <option value="" class="option-sep">&gt; Fabrik filters (slow!)</option>
             <option value="scrap">Folded scrap paper</option>
             <option value="finegrain">Fine grain paper</option>
             <option value="ricepaper">Fine rice paper</option>
@@ -213,7 +221,7 @@
             <option value="posterize">Posterize</option>
             <option value="emboss">Emboss</option>
             -->
-            <option value="">+++++ waves +++++</option>
+            <option value="" class="option-sep">&gt; Waves</option>
             <option value="waves">Sine waves</option>
             <option value="tangent">Tangent</option>
             <option value="cosine">Cosine</option>
@@ -1051,7 +1059,7 @@ class Editor {
             l.ctx.filter = `grayscale(100)`;
             break;        
             case 'hue':
-            l.ctx.filter = `hue-rotate(${param})`;
+            l.ctx.filter = `hue-rotate(90)`;
             break;
             case 'invert':
             l.ctx.filter = `invert(50)`;
