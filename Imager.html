@@ -205,7 +205,8 @@
             <option value="saturate">Saturate</option>
             <option value="sepia">Sepia</option>
             <option value="">+++++ fabrik filters +++++</option>
-            <option value="scrap">Sliced scraps</option>
+            <option value="scrap">Folded scrap paper</option>
+            <option value="finegrain">Fine grain paper</option>
             <!--
             <option value="innerglow">Inner glow</option>
             <option value="posterize">Posterize</option>
@@ -1001,7 +1002,10 @@ class Editor {
 						this._minimalEffect("sepia", layer);
                         break;
             case 'scrap':
-            this._scrap(layer);
+            this._paper('scrap',layer);
+            break;
+            case 'finegrain':
+            this._paper('finegrain',layer);
             break;
             case 'waves':
             this._waves(layer, 'sin', 10, 0.05);
@@ -1063,7 +1067,7 @@ class Editor {
         l.ctx.restore();
     }
 
-    _scrap(l, amplitude = 10, frequency = 0.05) {
+    _paper(method, l, amplitude = 10, frequency = 0.05) {
         l.ctx.save();
         const canvas = l.ctx.canvas;
         const imageData = l.ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -1075,16 +1079,27 @@ class Editor {
         l.ctx.clearRect(0, 0, canvas.width, canvas.height);
         for (let y = 0; y < canvas.height; y++) {
             let waveOffset;
-            waveOffset = Math.tan(y * frequency) * amplitude;
+            waveOffset = Math.tan(y * frequency) * (Math.random() * amplitude );
             for (let x = 0; x < canvas.width; x++) {
-                const srcX = x + waveOffset;
 
-                if (srcX >= 0 && srcX < canvas.width) {
-                    l.ctx.drawImage(
-                        tempCanvas,
-                        srcX, y, 1, 1,
-                        x, y, 1, 1
-                    );
+                if(method == 'finegrain') {
+                const srcX = x;
+                    if (srcX >= 0 && srcX < canvas.width) {
+                        l.ctx.drawImage(
+                            tempCanvas,
+                            srcX, Math.random() + y, 1, 1,
+                            x, Math.random() + y, 1, 1
+                        );
+                    }
+                } else {
+                const srcX = x + waveOffset;
+                    if (srcX >= 0 && srcX < canvas.width) {
+                        l.ctx.drawImage(
+                            tempCanvas,
+                            srcX, y, 1, 1,
+                            x, y, 1, 1
+                        );
+                    }
                 }
             }
         }
@@ -1124,9 +1139,9 @@ class Editor {
                     waveOffset = Math.sin(y * frequency) * amplitude;
             }
 
-            for (let x = 0; x < canvas.width; x++) {
+            for (let x = 0; x < canvas.height; x++) {
                 const srcX = x + waveOffset;
-                if (srcX >= 0 && srcX < canvas.width) {
+                if (srcX >= 0 && srcX < canvas.height) {
                     l.ctx.drawImage(tempCanvas, srcX, y, 1, 1, x, y, 1, 1);
                 }
             }
