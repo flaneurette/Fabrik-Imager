@@ -18,7 +18,7 @@ Menu:
 - Fill/Bucket
 - Color picker
 - Zoom +/-
-- Text (Arial only)
+- Text
 - Eraser
 - Rotate layers (left mouse button to rotate)
 - Filesize
