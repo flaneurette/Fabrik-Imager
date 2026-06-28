@@ -976,7 +976,7 @@ class Editor {
             this._dropshadow(layer, 5);
             break;
             case 'brightness':
-            this._brightness(layer, 5);
+            this._brightness(layer, 50);
             break; 
             case 'noise':
             this._noise(layer, 5);
@@ -1041,33 +1041,33 @@ class Editor {
 
     // EFFECTS ---------------------------------------------------------
                         
-    _minimalEffect(method, l, param = 5) {
+    _minimalEffect(method, l, param = 90) {
         l.ctx.save();
         switch(method) {
             case 'contrast':
-            l.ctx.filter = `contrast(50%)`;
+            l.ctx.filter = `contrast(1.5)`;
             break;
             case 'greyscale':
-            l.ctx.filter = `grayscale(50%)`;
+            l.ctx.filter = `grayscale(0.5)`;
             break;        
             case 'hue':
-            l.ctx.filter = `hue-rotate(${param}deg)`;
+            l.ctx.filter = `hue-rotate(${param})`;
             break;
             case 'invert':
-            l.ctx.filter = `invert(50%)`;
+            l.ctx.filter = `invert(50)`;
             break;
             case 'opacity':
-            l.ctx.filter = `opacity(20%)`;
+            l.ctx.filter = `opacity(0.5)`;
             break;
             case 'saturate':
-            l.ctx.filter = `saturate(70)`;
+            l.ctx.filter = `saturate(200%)`;
             break;
             case 'sepia':
-            l.ctx.filter = `sepia(50)`;
+            l.ctx.filter = `sepia(50%)`;
             break;
         }
         l.ctx.drawImage(l.canvas, 0, 0);
-        l.ctx.filter = 'none'; // Reset filter
+        //l.ctx.filter = 'none'; // Reset filter
         l.ctx.restore();
     }
 
@@ -1475,9 +1475,9 @@ class Editor {
 
         document.getElementById('btnTextOk').addEventListener('click',    () => this._insertText());
         document.getElementById('applyCss').addEventListener('click',    () => this._applyCSS());
-        document.getElementById('btnEffectsEditor').addEventListener('click',    () => this._openCSSEditor());
+        //document.getElementById('btnEffectsEditor').addEventListener('click',    () => this._openCSSEditor());
         document.getElementById('btnTextCancel').addEventListener('click', () => { this.textPending = null; this._closeTextModal(); });
-        document.getElementById('cancelCss').addEventListener('click', () => { this._closeCSSModal(); });
+        //document.getElementById('cancelCss').addEventListener('click', () => { this._closeCSSModal(); });
         document.getElementById('textInput').addEventListener('keydown', e => {
             if (e.key === 'Enter')  this._insertText();
             if (e.key === 'Escape') { this.textPending = null; this._closeTextModal(); }
