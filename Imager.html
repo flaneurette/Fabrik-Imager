@@ -1,433 +1,444 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>F/\brik Imager</title>
     <style>
-    
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { background: #2b2b2b; overflow: hidden; user-select: none; }
-        .editor-container { display: flex; flex-direction: column; height: 100vh; }
 
-        /* TOOLBAR */
-        .toolbar {
-            background: #222;
-            border-bottom: 1px solid #222;
-            padding: 5px 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-shrink: 0;
-            color: #666;
-        }
-        .tool-btn {
-            width: 32px; height: 32px;
-            background: #555;
-            border: 1px solid #666;
-            border-radius: 4px;
-            color: #ddd;
-            font-size: 16px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-        }
-        #fontFaces {
-            background: #555;
-            border: 1px solid #666;
-            border-radius: 4px;
-            color: #ddd;
-            padding:5px;
-            display: block;
-        }
-        .tool-btn:hover { background: #666; }
-        .tool-btn.active { background: #888; border-color: #666; color: #fff; }
-        .toolbar-sep { width: 1px; height: 28px; background: #555; margin: 0 4px; }
-        .color-picker { width: 40px; height: 40px; border: none; padding: 5px; cursor: pointer; background: none; }
-        #inputW, #inputH, .quality-slider { background: #999; color: #333; width: 55px; cursor: pointer; padding:5px; border: 0px solid black; }
-        .quality-value { color: #333; font-size: 12px; min-width: 15px; }
-        .tb-btn {
-            padding: 5px 10px; background: #888; color: #fff;
-            border: none; border-radius: 4px; cursor: pointer; font-size: 12px;
-        }
-        .tb-btn:hover { background: #444; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { background: #2b2b2b; overflow: hidden; user-select: none; }
+    .editor-container { display: flex; flex-direction: column; height: 100vh; }
 
-        /* MIDDLE */
-        .middle-row { display: flex; flex: 1; overflow: hidden; }
+    /* TOOLBAR */
+    .toolbar {
+        background: #222;
+        border-bottom: 1px solid #222;
+        padding: 5px 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        color: #666;
+    }
+    .tool-btn {
+        width: 28px; height: 28px;
+        background: #555;
+        border: 1px solid #666;
+        border-radius: 4px;
+        color: #ddd;
+        font-size: 14px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+    }
+    .layer-move, .layer-delete {
+        width: 18px; height: 18px;
+        background: #555;
+        border: 1px solid #666;
+        border-radius: 4px;
+        padding: 10px;
+        color: #ddd;
+        font-size: 12px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+    }
+    #fontFaces {
+        background: #555;
+        border: 1px solid #666;
+        border-radius: 4px;
+        color: #ddd;
+        padding:5px;
+        display: block;
+    }
+    .tool-btn:hover { background: #666; }
+    .tool-btn.active { background: #888; border-color: #666; color: #fff; }
+    .toolbar-sep { width: 1px; height: 28px; background: #555; margin: 0 4px; }
+    .color-picker { width: 40px; height: 40px; border: none; padding: 5px; cursor: pointer; background: none; }
+    #inputW, #inputH, .quality-slider { background: #999; color: #333; width: 55px; cursor: pointer; padding:5px; border: 0px solid black; }
+    .quality-value { color: #333; font-size: 12px; min-width: 15px; }
+    .tb-btn {
+        padding: 5px 10px; background: #888; color: #fff;
+        border: none; border-radius: 4px; cursor: pointer; font-size: 12px;
+    }
+    .tb-btn:hover { background: #444; }
 
-        /* WORK AREA */
-        .workarea-column { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-        .workarea-bar {
-            background: #444; padding: 5px 10px;
-            display: flex; align-items: center; gap: 6px;
-            border-bottom: 1px solid #222; font-size: 12px; color: #ccc;
-        }
-        .workarea-bar input[type=number] {
-            width: 58px; padding: 3px 5px; background: #555;
-            border: 1px solid #666; border-radius: 3px; color: #fff; font-size: 12px;
-        }
-        .workarea-bar button {
-            padding: 3px 8px; background: #666; color: #fff;
-            border: none; border-radius: 3px; cursor: pointer; font-size: 12px;
-        }
-        .workarea-bar button:hover { background: #666; }
-        .canvas-scroll {
-            flex: 1; overflow: auto; background: #1e1e1e;
-            display: flex; align-items: flex-start; justify-content: flex-start; padding: 20px;
-        }
-        .canvas-wrapper {
-            position: relative; display: inline-block;
-            box-shadow: 0 0 0 1px #555, 0 4px 20px rgba(0,0,0,0.6);
-        }
-        #main-canvas { display: block; background: #fff; cursor: crosshair; }
-        .canvas-wrapper::before {
-            content: ''; position: absolute; inset: 0;
-            background-image:
-                linear-gradient(45deg,#ccc 25%,transparent 25%),
-                linear-gradient(-45deg,#ccc 25%,transparent 25%),
-                linear-gradient(45deg,transparent 75%,#ccc 75%),
-                linear-gradient(-45deg,transparent 75%,#ccc 75%);
-            background-size: 16px 16px;
-            background-position: 0 0,0 8px,8px -8px,-8px 0px;
-            background-color: #fff; z-index: -1;
-        }
+    /* MIDDLE */
+    .middle-row { display: flex; flex: 1; overflow: hidden; }
 
-        /* LAYERS PANEL */
-        .layers-panel {
-            width: 200px; background: #333; border-left: 1px solid #222;
-            display: flex; flex-direction: column; flex-shrink: 0;
-        }
-        .layers-panel-header {
-            padding: 8px 10px; font-size: 13px; font-weight: bold; color: #ccc;
-            border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;
-        }
-        .layers-panel-header span { font-size: 10px; color: #777; font-weight: normal; }
-        .layers-list { flex: 1; overflow-y: auto; }
-        .layer-item {
-            display: flex; align-items: center; gap: 6px;
-            padding: 7px 8px; border-bottom: 1px solid #2a2a2a;
-            cursor: pointer; color: #ccc; font-size: 13px;
-        }
-        .layer-item:hover { background: #3d3d3d; }
-        .layer-item.active { background: #0078d7; color: #fff; }
-        .layer-vis { cursor: pointer; font-size: 14px; opacity: 0.8; flex-shrink: 0; }
-        .layer-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .layer-del {
-            background: transparent; border: none; color: #f88;
-            cursor: pointer; font-size: 15px; padding: 0 2px; line-height: 1; flex-shrink: 0;
-        }
-        .layer-del:hover { color: #f44; }
-        .layers-panel-footer {
-            padding: 8px; display: flex; gap: 6px; border-top: 1px solid #222;
-        }
-        .layers-panel-footer button {
-            flex: 1; padding: 6px; background: #555; color: #ddd;
-            border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 12px;
-        }
-        .layers-panel-footer button:hover { background: #666; }
+    /* WORK AREA */
+    .workarea-column { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+    .workarea-bar {
+        background: #444; padding: 5px 10px;
+        display: flex; align-items: center; gap: 6px;
+        border-bottom: 1px solid #222; font-size: 12px; color: #ccc;
+    }
+    .workarea-bar input[type=number] {
+        width: 58px; padding: 3px 5px; background: #555;
+        border: 1px solid #666; border-radius: 3px; color: #fff; font-size: 12px;
+    }
+    .workarea-bar button {
+        padding: 3px 8px; background: #666; color: #fff;
+        border: none; border-radius: 3px; cursor: pointer; font-size: 12px;
+    }
+    .workarea-bar button:hover { background: #666; }
+    .canvas-scroll {
+        flex: 1; overflow: auto; background: #1e1e1e;
+        display: flex; align-items: flex-start; justify-content: flex-start; padding: 20px;
+    }
+    .canvas-wrapper {
+        position: relative; display: inline-block;
+        box-shadow: 0 0 0 1px #555, 0 4px 20px rgba(0,0,0,0.6);
+    }
+    #main-canvas { display: block; background: #fff; cursor: crosshair; }
+    .canvas-wrapper::before {
+        content: ''; position: absolute; inset: 0;
+        background-image:
+        linear-gradient(45deg,#ccc 25%,transparent 25%),
+        linear-gradient(-45deg,#ccc 25%,transparent 25%),
+        linear-gradient(45deg,transparent 75%,#ccc 75%),
+        linear-gradient(-45deg,transparent 75%,#ccc 75%);
+        background-size: 16px 16px;
+        background-position: 0 0,0 8px,8px -8px,-8px 0px;
+        background-color: #fff; z-index: -1;
+    }
 
-        /* MODAL */
+    /* LAYERS PANEL */
+    .layers-panel {
+        width: 200px; background: #333; border-left: 1px solid #222;
+        display: flex; flex-direction: column; flex-shrink: 0;
+    }
+    .layers-panel-header {
+        padding: 8px 10px; font-size: 13px; font-weight: bold; color: #ccc;
+        border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;
+    }
+    .layers-panel-header span { font-size: 10px; color: #777; font-weight: normal; }
+    .layers-list { flex: 1; overflow-y: auto; }
+    .layer-item {
+        display: flex; align-items: center; gap: 6px;
+        padding: 7px 8px; border-bottom: 1px solid #2a2a2a;
+        cursor: pointer; color: #ccc; font-size: 13px;
+    }
+    .layer-item:hover { background: #3d3d3d; }
+    .layer-item.active { background: #0078d7; color: #fff; }
+    .layer-vis { cursor: pointer; font-size: 14px; opacity: 0.8; flex-shrink: 0; }
+    .layer-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .layer-del {
+        background: transparent; border: none; color: #f88;
+        cursor: pointer; font-size: 15px; padding: 0 2px; line-height: 1; flex-shrink: 0;
+    }
+    .layer-del:hover { color: #f44; }
+    .layers-panel-footer {
+        padding: 8px; display: flex; gap: 6px; border-top: 1px solid #222;
+    }
+    .layers-panel-footer button {
+        flex: 1; padding: 6px; background: #555; color: #ddd;
+        border: 1px solid #666; border-radius: 4px; cursor: pointer; font-size: 12px;
+    }
+    .layers-panel-footer button:hover { background: #666; }
 
-        .modal-overlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.55); z-index: 999;
-            align-items: center; justify-content: center;
-        }
-        .modal-overlay.open { display: flex; }
-        .modal-box {
-            background: #3a3a3a; border: 1px solid #555;
-            border-radius: 6px; padding: 20px; min-width: 320px; color: #ddd;
-        }
-        .modal-box h3 { margin-bottom: 14px; font-size: 15px; }
-        .modal-box label { font-size: 13px; display: block; margin-bottom: 6px; }
-        .modal-box input[type=text], .modal-box input[type=number] {
-            width: 100%; padding: 7px 9px; background: #555;
-            border: 1px solid #666; border-radius: 4px; color: #fff;
-            font-size: 13px; margin-bottom: 12px;
-        }
-        .modal-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
-        .modal-row button { padding: 6px 16px; border-radius: 4px; border: none; cursor: pointer; font-size: 13px; }
-        .btn-ok { background: #0078d7; color: #fff; }
-        .btn-ok:hover { background: #005fa3; }
-        .btn-cancel { background: #555; color: #ddd; }
-        .btn-cancel:hover { background: #666; }
+    /* MODAL */
 
-        /* STATUS BAR */
-        .status-bar {
-            background: #2e2e2e; border-top: 1px solid #222;
-            padding: 3px 12px; font-size: 11px; color: #888;
-            display: flex; gap: 20px;
-        }
-        .layer-item.selected { background: #005fa3; color: #fff; }
-        .option-sep {
-            background-color:#fff;
-            color:#000;
-        }
-        .option-sep: hover {
-            background-color:#fff;
-            color:#000;
-        }
-        
+    .modal-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.55); z-index: 999;
+        align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+        background: #3a3a3a; border: 1px solid #555;
+        border-radius: 6px; padding: 20px; min-width: 320px; color: #ddd;
+    }
+    .modal-box h3 { margin-bottom: 14px; font-size: 15px; }
+    .modal-box label { font-size: 13px; display: block; margin-bottom: 6px; }
+    .modal-box input[type=text], .modal-box input[type=number] {
+        width: 100%; padding: 7px 9px; background: #555;
+        border: 1px solid #666; border-radius: 4px; color: #fff;
+        font-size: 13px; margin-bottom: 12px;
+    }
+    .modal-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+    .modal-row button { padding: 6px 16px; border-radius: 4px; border: none; cursor: pointer; font-size: 13px; }
+    .btn-ok { background: #0078d7; color: #fff; }
+    .btn-ok:hover { background: #005fa3; }
+    .btn-cancel { background: #555; color: #ddd; }
+    .btn-cancel:hover { background: #666; }
+
+    /* STATUS BAR */
+    .status-bar {
+        background: #2e2e2e; border-top: 1px solid #222;
+        padding: 3px 12px; font-size: 11px; color: #888;
+        display: flex; gap: 20px;
+    }
+    .layer-item.selected { background: #005fa3; color: #fff; }
+    .option-sep {
+        background-color:#fff;
+        color:#000;
+    }
+    .option-sep: hover {
+        background-color:#fff;
+        color:#000;
+    }
+
     </style>
-</head>
-<body>
-<div class="editor-container">
+    </head>
+    <body>
+    <div class="editor-container">
 
     <!-- TOOLBAR -->
     <div class="toolbar">
-        <div>F /\ B R I K.</div>
-        <button class="tb-btn" id="btnOpen"  title="Open PNG (Ctrl+O)">Open</button>
-        <button class="tb-btn" id="btnSave"  title="Save PNG (Ctrl+S)">Save</button>
-        <button class="tb-btn" id="btnSaveSel">Save selection</button>
-        
-        <div class="toolbar-sep"></div>
-        <label title="PNG quality"><input type="number" size="4" id="qualitySlider" class="quality-slider" min="1" max="100" value="100">
-        </label>
-        <div class="toolbar-sep"></div>
-        <div class="tool-btn active" data-tool="pointer" title="Pointer (V) to drag...">✥</div>
-        <div class="tool-btn" data-tool="select"       title="Rect Select (S)">⬚</div>
-        <div class="tool-btn" data-tool="selectcircle" title="Ellipse Select (C)">⭘</div>
-        <div class="tool-btn" data-tool="eraser"       title="Eraser (E)">⌫</div>
-        <div class="tool-btn" data-tool="fill"         title="Fill (F)">▨</div>
-        <div class="tool-btn" data-tool="text"         title="Text (T)">T</div>
-        <div class="tool-btn" data-tool="rotate"       title="Rotate Layer (R)">↻</div>
-        <div class="toolbar-sep"></div>
-        <label title="Foreground color"><input type="color" id="colorPicker" class="color-picker" value="#000000">
-        </label>
-        <div class="toolbar-sep"></div>
-        <button class="tb-btn" id="btnZoomIn"  title="Zoom In (+)">+</button>
-        <button class="tb-btn" id="btnZoomOut" title="Zoom Out (-)">-</button>
-        <div class="toolbar-sep"></div>
-        <small>Layer Size:</small><input type="number" id="resizePercent" class="quality-slider" min="1" max="1000" value="100" size="3" title="Resize layer percentage">%
-        <button class="tb-btn" id="btnResizeLayer" title="Resize active layer">Resize layer</button>
-        <select class="tb-btn" id="effects"  title="Effects">
-            <option value="" class="option-sep">Layer effect</option>
-            <option value="blur">Blur</option>
-            <option value="dropshadow">Drop shadow</option>
-            <option value="brightness">Brightness</option>
-            <option value="noise">Noise</option>
-            <option value="contrast">Contrast</option>
-            <option value="grayscale">Grayscale</option>
-            <option value="hue">Hue</option>
-            <option value="invert">Invert</option>
-            <option value="opacity">Opacity</option>
-            <option value="saturate">Saturate</option>
-            <option value="sepia">Sepia</option>
-            <option value="" class="option-sep">Fabrik filters (slow)</option>
-            <option value="scrap">Folded scrap paper</option>
-            <option value="finegrain">Fine grain paper</option>
-            <option value="ricepaper">Fine rice paper</option>
-            <!--
-            <option value="innerglow">Inner glow</option>
-            <option value="posterize">Posterize</option>
-            <option value="emboss">Emboss</option>
-            -->
-            <option value="" class="option-sep">Waves (slow)</option>
-            <option value="waves">Sine waves</option>
-            <option value="tangent">Tangent</option>
-            <option value="cosine">Cosine</option>
-            <option value="square">Square</option>
-            <option value="sawtooth">Sawtooth</option>
-        </select> 
-        <!-- <button class="tb-btn" id="btnEffectsEditor" title="Open effect editor">Effect editor</button> -->
+    <div>F /\ B R I K.</div>
+    <button class="tb-btn" id="btnOpen"  title="Open PNG (Ctrl+O)">Open</button>
+    <button class="tb-btn" id="btnSave"  title="Save PNG (Ctrl+S)">Save</button>
+    <button class="tb-btn" id="btnSaveSel">Save selection</button>
+
+    <div class="toolbar-sep"></div>
+    <label title="PNG quality"><input type="number" size="4" id="qualitySlider" class="quality-slider" min="1" max="100" value="100">
+    </label>
+    <div class="toolbar-sep"></div>
+    <div class="tool-btn active" data-tool="pointer" title="Pointer (V) to drag...">✥</div>
+    <div class="tool-btn" data-tool="select"       title="Rect Select (S)">⬚</div>
+    <div class="tool-btn" data-tool="selectcircle" title="Ellipse Select (C)">⭘</div>
+    <div class="tool-btn" data-tool="eraser"       title="Eraser (E)">⌫</div>
+    <div class="tool-btn" data-tool="fill"         title="Fill (F)">▨</div>
+    <div class="tool-btn" data-tool="text"         title="Text (T)">T</div>
+    <div class="tool-btn" data-tool="rotate"       title="Rotate Layer (R)">↻</div>
+    <div class="toolbar-sep"></div>
+    <label title="Foreground color"><input type="color" id="colorPicker" class="color-picker" value="#000000">
+    </label>
+    <div class="toolbar-sep"></div>
+    <button class="tb-btn" id="btnZoomIn"  title="Zoom In (+)">+</button>
+    <button class="tb-btn" id="btnZoomOut" title="Zoom Out (-)">-</button>
+    <div class="toolbar-sep"></div>
+    <small>Layer Size:</small><input type="number" id="resizePercent" class="quality-slider" min="1" max="1000" value="100" size="3" title="Resize layer percentage">%
+    <button class="tb-btn" id="btnResizeLayer" title="Resize active layer">Resize layer</button>
+    <select class="tb-btn" id="effects"  title="Effects">
+    <option value="" class="option-sep">Layer effect</option>
+    <option value="blur">Blur</option>
+    <option value="dropshadow">Drop shadow</option>
+    <option value="brightness">Brightness</option>
+    <option value="noise">Noise</option>
+    <option value="contrast">Contrast</option>
+    <option value="grayscale">Grayscale</option>
+    <option value="hue">Hue</option>
+    <option value="invert">Invert</option>
+    <option value="opacity">Opacity</option>
+    <option value="saturate">Saturate</option>
+    <option value="sepia">Sepia</option>
+    <option value="" class="option-sep">Fabrik filters (slow)</option>
+    <option value="scrap">Folded scrap paper</option>
+    <option value="finegrain">Fine grain paper</option>
+    <option value="ricepaper">Fine rice paper</option>
+    <!--
+    <option value="innerglow">Inner glow</option>
+    <option value="posterize">Posterize</option>
+    <option value="emboss">Emboss</option>
+    -->
+    <option value="" class="option-sep">Waves (slow)</option>
+    <option value="waves">Sine waves</option>
+    <option value="tangent">Tangent</option>
+    <option value="cosine">Cosine</option>
+    <option value="square">Square</option>
+    <option value="sawtooth">Sawtooth</option>
+    </select>
+    <!-- <button class="tb-btn" id="btnEffectsEditor" title="Open effect editor">Effect editor</button> -->
     </div>
 
 
     <!-- MIDDLE -->
     <div class="middle-row">
 
-        <!-- WORK AREA -->
-        <div class="workarea-column">
-            <div class="workarea-bar" style="margin-left:15px;">
-                <span>Canvas size:</span>
-                <input type="number" id="inputW" value="1200" min="1" max="8000">
-                <span>×</span>
-                <input type="number" id="inputH" value="700"  min="1" max="8000">
-                <span>px</span>
-                <button id="btnResize">Apply</button>
-            </div>
-            <div class="canvas-scroll" id="canvasScroll">
-                <div class="canvas-wrapper" id="canvasWrapper">
-                    <canvas id="main-canvas" width="1200" height="700"></canvas>
-                </div>
-            </div>
-        </div>
+    <!-- WORK AREA -->
+    <div class="workarea-column">
+    <div class="workarea-bar" style="margin-left:15px;">
+    <span>Canvas size:</span>
+    <input type="number" id="inputW" value="1200" min="1" max="8000">
+    <span>×</span>
+    <input type="number" id="inputH" value="700"  min="1" max="8000">
+    <span>px</span>
+    <button id="btnResize">Apply</button>
+    </div>
+    <div class="canvas-scroll" id="canvasScroll">
+    <div class="canvas-wrapper" id="canvasWrapper">
+    <canvas id="main-canvas" width="1200" height="700"></canvas>
+    </div>
+    </div>
+    </div>
 
-        <!-- LAYERS PANEL -->
-        <div class="layers-panel">
-            <div class="layers-panel-header">
-                Layers <span>Mid-drag=move</span>
-            </div>
-            <div class="layers-list" id="layersList"></div>
-            <div class="layers-panel-footer">
-                <button id="btnNewLayer">+</button>
-                <button id="btnDupLayer">⧉</button>
-                <button id="btnDelLayer">X</button>
-            </div>
-        </div>
+    <!-- LAYERS PANEL -->
+    <div class="layers-panel">
+    <div class="layers-panel-header">
+    Layers <span>Mid-drag=move</span>
+    </div>
+    <div class="layers-list" id="layersList"></div>
+    <div class="layers-panel-footer">
+    <button id="btnNewLayer">+</button>
+    <button id="btnDupLayer">⧉</button>
+    <button id="btnDelLayer">X</button>
+    </div>
+    </div>
 
     </div>
 
     <!-- STATUS BAR -->
     <div class="status-bar">
-        <span id="statusTool">Tool: Pointer</span>
-        <span id="statusCoords">X: 0  Y: 0</span>
-        <span id="statusSize">Canvas: 1200 × 700</span>
-        <span id="statusLayer">Layer: —</span>
-        <span id="statusRotate"></span>
-        <span id="statusZoom">Zoom: 100%</span>
+    <span id="statusTool">Tool: Pointer</span>
+    <span id="statusCoords">X: 0  Y: 0</span>
+    <span id="statusSize">Canvas: 1200 × 700</span>
+    <span id="statusLayer">Layer: —</span>
+    <span id="statusRotate"></span>
+    <span id="statusZoom">Zoom: 100%</span>
     </div>
-    
-</div>
 
-<!-- TEXT MODAL -->
-<div class="modal-overlay" id="textModal">
+    </div>
+
+    <!-- TEXT MODAL -->
+    <div class="modal-overlay" id="textModal">
     <div class="modal-box">
-        <h3>Insert Text</h3>
-        <label>Text</label>
-        <input type="text" id="textInput" placeholder="Enter your text…">
-        <label>Font</label>
-        <input type="text" id="fontFace" value="" placeholder="">
-        <label>Or select a system font...</label>
-            <select id="fontFaces">
-                <option value="">------ Sans-serif font ------</option>
-                <option value="Arial">Arial</option>
-                <option value="Calibri">Calibri</option>
-                <option value="Candara">Candara</option>
-                <option value="Century Gothic">Century Gothic</option>
-                <option value="Corbel">Corbel</option>
-                <option value="Franklin Gothic Medium">Franklin Gothic Medium</option>
-                <option value="Gill Sans MT">Gill Sans MT</option>
-                <option value="Helvetica">Helvetica</option>
-                <option value="Microsoft Sans Serif">Microsoft Sans Serif</option>
-                <option value="Segoe UI">Segoe UI</option>
-                <option value="Tahoma">Tahoma</option>
-                <option value="Trebuchet MS">Trebuchet MS</option>
-                <option value="Verdana">Verdana</option>
-                <option value="">------ Serif font ------</option>
-                <option value="Cambria">Cambria</option>
-                <option value="Georgia">Georgia</option>
-                <option value="Goudy Old Style">Goudy Old Style</option>
-                <option value="Palatino Linotype">Palatino Linotype</option>
-                <option value="Times New Roman">Times New Roman</option>
-                <option value="Baskerville">Baskerville</option>
-                <option value="Bookman Old Style">Bookman Old Style</option>
-                <option value="MS Serif">MS Serif</option>
-                <option value="">------ Monospace font ------</option>
-                <option value="Consolas">Consolas</option>
-                <option value="Courier New">Courier New</option>
-                <option value="Lucida Console">Lucida Console</option>
-                <option value="Lucida Sans Typewriter">Lucida Sans Typewriter</option>
-                <option value="">------- Decorative font ------</option>
-                <option value="Comic Sans MS">Comic Sans MS</option>
-                <option value="Impact">Impact</option>
-                <option value="Lucida Sans Unicode">Lucida Sans Unicode</option>
-                <option value="MS Outlook">MS Outlook</option>
-                <option value="Wingdings">Wingdings</option>
-            </select>
-        <label>Serif</label>
-        <input type="text" id="serif" value="sans-serif" placeholder="sans-serif">
-        <label>Font size (px)</label>
-        <input type="number" id="fontSizeInput" value="24" min="4" max="400">
-        <div class="modal-row">
-            <button class="btn-cancel" id="btnTextCancel">Cancel</button>
-            <button class="btn-ok"     id="btnTextOk">Insert</button>
-        </div>
+    <h3>Insert Text</h3>
+    <label>Text</label>
+    <input type="text" id="textInput" placeholder="Enter your text…">
+    <label>Font</label>
+    <input type="text" id="fontFace" value="" placeholder="">
+    <label>Or select a system font...</label>
+    <select id="fontFaces">
+    <option value="">------ Sans-serif font ------</option>
+    <option value="Arial">Arial</option>
+    <option value="Calibri">Calibri</option>
+    <option value="Candara">Candara</option>
+    <option value="Century Gothic">Century Gothic</option>
+    <option value="Corbel">Corbel</option>
+    <option value="Franklin Gothic Medium">Franklin Gothic Medium</option>
+    <option value="Gill Sans MT">Gill Sans MT</option>
+    <option value="Helvetica">Helvetica</option>
+    <option value="Microsoft Sans Serif">Microsoft Sans Serif</option>
+    <option value="Segoe UI">Segoe UI</option>
+    <option value="Tahoma">Tahoma</option>
+    <option value="Trebuchet MS">Trebuchet MS</option>
+    <option value="Verdana">Verdana</option>
+    <option value="">------ Serif font ------</option>
+    <option value="Cambria">Cambria</option>
+    <option value="Georgia">Georgia</option>
+    <option value="Goudy Old Style">Goudy Old Style</option>
+    <option value="Palatino Linotype">Palatino Linotype</option>
+    <option value="Times New Roman">Times New Roman</option>
+    <option value="Baskerville">Baskerville</option>
+    <option value="Bookman Old Style">Bookman Old Style</option>
+    <option value="MS Serif">MS Serif</option>
+    <option value="">------ Monospace font ------</option>
+    <option value="Consolas">Consolas</option>
+    <option value="Courier New">Courier New</option>
+    <option value="Lucida Console">Lucida Console</option>
+    <option value="Lucida Sans Typewriter">Lucida Sans Typewriter</option>
+    <option value="">------- Decorative font ------</option>
+    <option value="Comic Sans MS">Comic Sans MS</option>
+    <option value="Impact">Impact</option>
+    <option value="Lucida Sans Unicode">Lucida Sans Unicode</option>
+    <option value="MS Outlook">MS Outlook</option>
+    <option value="Wingdings">Wingdings</option>
+    </select>
+    <label>Serif</label>
+    <input type="text" id="serif" value="sans-serif" placeholder="sans-serif">
+    <label>Font size (px)</label>
+    <input type="number" id="fontSizeInput" value="24" min="4" max="400">
+    <div class="modal-row">
+    <button class="btn-cancel" id="btnTextCancel">Cancel</button>
+    <button class="btn-ok"     id="btnTextOk">Insert</button>
     </div>
-</div>
+    </div>
+    </div>
 
-<div id="effectEditorWindow" class="modal-overlay">
-  <div class="modal-box">
+    <div id="effectEditorWindow" class="modal-overlay">
+    <div class="modal-box">
     <h3>CSS Effects Editor</h3>
     <textarea id="cssInput" class="modal-box" style="outline:none;"  rows="15" cols="40" placeholder="Enter CSS rules (e.g., filter: blur(5px);)"></textarea>
     <div class="modal-row">
-      <button id="applyCss" class="btn-ok">Apply</button>
-      <button id="cancelCss" class="btn-cancel">Close</button>
+    <button id="applyCss" class="btn-ok">Apply</button>
+    <button id="cancelCss" class="btn-cancel">Close</button>
     </div>
-  </div>
-</div>
+    </div>
+    </div>
 
-<!-- 
-<div id="resulting" style="background-color:#333;margin:10px;padding:10px;color:#888;z-index:9999;border:1px dashed #888;position:absolute;right: 300px;top: 100px;width:500px;height:500px;">
-   Click save, then, right click this box and "save as", or click the link.
-   <img src="" id="resultingImage" width="500" />
-</div>
--->
+    <!--
+    <div id="resulting" style="background-color:#333;margin:10px;padding:10px;color:#888;z-index:9999;border:1px dashed #888;position:absolute;right: 300px;top: 100px;width:500px;height:500px;">
+    Click save, then, right click this box and "save as", or click the link.
+    <img src="" id="resultingImage" width="500" />
+    </div>
+    -->
 
-<script>
+    <script>
 
-if (typeof globalThis.ns_setupCallback !== 'function') {
+    if (typeof globalThis.ns_setupCallback !== 'function') {
     globalThis.ns_setupCallback = () => {};
-}
-
-class Layer {
-    constructor(w, h, name) {
-        this.name    = name || 'Layer';
-        this.visible = true;
-        this.x       = 0;
-        this.y       = 0;
-        this.rotation = 0; // radians
-        this.canvas  = document.createElement('canvas');
-        this.canvas.width  = w;
-        this.canvas.height = h;
-        this.ctx = this.canvas.getContext('2d');
     }
-    resize(w, h) {
-        const old = this.canvas;
-        this.canvas = document.createElement('canvas');
-        this.canvas.width  = w;
-        this.canvas.height = h;
-        this.ctx = this.canvas.getContext('2d');
-        this.ctx.drawImage(old, 0, 0);
+
+    class Layer {
+        constructor(w, h, name) {
+            this.name    = name || 'Layer';
+            this.visible = true;
+            this.x       = 0;
+            this.y       = 0;
+            this.rotation = 0; // radians
+            this.canvas  = document.createElement('canvas');
+            this.canvas.width  = w;
+            this.canvas.height = h;
+            this.ctx = this.canvas.getContext('2d');
+        }
+        resize(w, h) {
+            const old = this.canvas;
+            this.canvas = document.createElement('canvas');
+            this.canvas.width  = w;
+            this.canvas.height = h;
+            this.ctx = this.canvas.getContext('2d');
+            this.ctx.drawImage(old, 0, 0);
+        }
     }
-}
 
-class Editor {
-    constructor() {
-        this.mainCanvas = document.getElementById('main-canvas');
-        this.mainCtx    = this.mainCanvas.getContext('2d');
-
-        this.layers    = [];
-        this.activeIdx = -1;
-        this.tool      = 'pointer';
-        this.color     = '#000000';
-        this.quality   = 1.0;
-
-        // Rect selection
-        this.sel        = null;
-        this.selDrawing = false;
-        this.selStartX  = 0;
-        this.selStartY  = 0;
-        this.selectedLayers = []; 
-        
-        this.zoomLevel = 1.0;  // NEW: Zoom level
-
-        // Undo stack
-        this.undoStack = [];
-        this.maxUndoSteps = 10;
-        
-        // Circle selection
+    class Editor {
+        constructor() {
+            this.mainCanvas = document.getElementById('main-canvas');
+            this.mainCtx    = this.mainCanvas.getContext('2d');
+            
+            this.layers    = [];
+            this.activeIdx = -1;
+            this.tool      = 'pointer';
+            this.color     = '#000000';
+            this.quality   = 1.0;
+            
+            // Rect selection
+            this.sel        = null;
+            this.selDrawing = false;
+            this.selStartX  = 0;
+            this.selStartY  = 0;
+            this.selectedLayers = [];
+            
+            this.zoomLevel = 1.0;  // NEW: Zoom level
+            
+            // Undo stack
+            this.undoStack = [];
+            this.maxUndoSteps = 10;
+            
+            // Circle selection
         this.selCircle        = null; // {cx,cy,rx,ry}
         this.selCircleDrawing = false;
         this.selCircleStartX  = 0;
         this.selCircleStartY  = 0;
-
+        
         this.clipboard = null;
-
+        
         this.eraserDrawing = false;
         this.eraserSize    = 12;
-
+        
         // Layer drag (middle mouse)
         this.dragLayer = null;
         this.dragOffX  = 0;
         this.dragOffY  = 0;
-
+        
         // Rotate
         this.rotateActive  = false;  // holding left button on rotate tool
         this.rotateDragX   = 0;      // last X for drag-rotate
         this.rotateInterval = null;
-
+        
         this.textPending = null;
-
+        
         this._init();
     }
 
@@ -442,102 +453,218 @@ class Editor {
         this._render();
     }
 
-    _addLayer(name) {
-    this.saveState();
+
+    _addLayer(name, insertAtTop = false) {
+        this.saveState();
+        
         const w = this.mainCanvas.width;
         const h = this.mainCanvas.height;
-        const l = new Layer(w, h, name || `Layer ${this.layers.length + 1}`);
-        this.layers.push(l);
-        this.activeIdx = this.layers.length - 1;
+        
+    const layer = new Layer(w, h, name || `Layer ${this.layers.length + 1}`);
+
+    // Insert at correct position
+    if (insertAtTop) {
+        this.layers.unshift(layer);
+        this.activeIdx = 0;
+        } else {
+            this.layers.push(layer);
+            this.activeIdx = this.layers.length - 1;
+        }
+        
         this._refreshLayersPanel();
-        return l;
+        return layer;
     }
 
     _deleteLayer(idx) {
-    this.saveState();
         if (this.layers.length <= 1) return;
+        
+        this.saveState();
+        
         this.layers.splice(idx, 1);
-        this.activeIdx = Math.min(this.activeIdx, this.layers.length - 1);
+        
+        // Update active index
+        if (idx < this.activeIdx) {
+            this.activeIdx--;
+            } else if (idx === this.activeIdx) {
+                this.activeIdx = Math.min(this.activeIdx, this.layers.length - 1);
+            }
+            
+            this._refreshLayersPanel();
+            this._render();
+        }
+        
+        _duplicateLayer(idx) {
+            const original = this.layers[idx];
+            this.saveState();
+            
+            const w = original.canvas.width;
+            const h = original.canvas.height;
+            
+        const layer = new Layer(w, h, `${original.name} copy`);
+        layer.ctx.drawImage(original.canvas, 0, 0);
+        layer.x = original.x;
+        layer.y = original.y;
+        layer.rotation = original.rotation;
+        
+        this.layers.splice(idx + 1, 0, layer);
+        this.activeIdx = idx + 1;
+        
         this._refreshLayersPanel();
         this._render();
     }
 
-    _duplicateLayer(idx) {
-    this.saveState();
-        const src = this.layers[idx];
-        if (!src) return;
-        const nl = new Layer(src.canvas.width, src.canvas.height, src.name + ' copy');
-        nl.x        = src.x + 10;
-        nl.y        = src.y + 10;
-        nl.rotation = src.rotation;
-        nl.visible  = src.visible;
-        nl.ctx.drawImage(src.canvas, 0, 0);
-        this.layers.splice(idx + 1, 0, nl);
-        this.activeIdx = idx + 1;
-        this._refreshLayersPanel();
-        this._render();
+    _moveLayerUp(idx) {
+        if (idx > 0) {
+            this.saveState();
+            const layer = this.layers[idx];
+            this.layers.splice(idx, 1);
+            this.layers.splice(idx - 1, 0, layer);
+            this.activeIdx = idx - 1;
+            this._refreshLayersPanel();
+            this._render();
+        }
+    }
+
+    _moveLayerDown(idx) {
+        if (idx < this.layers.length - 1) {
+            this.saveState();
+            const layer = this.layers[idx];
+            this.layers.splice(idx, 1);
+            this.layers.splice(idx + 1, 0, layer);
+            this.activeIdx = idx + 1;
+            this._refreshLayersPanel();
+            this._render();
+        }
     }
 
     _refreshLayersPanel() {
         const list = document.getElementById('layersList');
         list.innerHTML = '';
-        for (let i = this.layers.length - 1; i >= 0; i--) {
-            const l = this.layers[i];
+        
+        this.layers.forEach((layer, idx) => {
             const item = document.createElement('div');
-            item.className = 'layer-item' + (i === this.activeIdx ? ' active' : '');
+            item.className = 'layer-item';
+    item.title = `Layer: ${layer.name}\nPosition: (${layer.x}, ${layer.y})`;
 
-            const vis = document.createElement('span');
-            vis.className = 'layer-vis';
-            vis.textContent = l.visible ? '👁' : 'X';
-            vis.title = 'Toggle visibility';
-            vis.addEventListener('click', e => {
-                e.stopPropagation();
-                l.visible = !l.visible;
-                vis.textContent = l.visible ? '👁' : 'X';
-                this._render();
-            });
-
-            const name = document.createElement('span');
-            name.className = 'layer-name';
-            name.textContent = l.name;
-
-            const del = document.createElement('button');
-            del.className = 'layer-del';
-            del.textContent = '×';
-            del.title = 'Delete layer';
-            del.addEventListener('click', e => { e.stopPropagation(); this._deleteLayer(i); });
-
-            item.append(vis, name, del);
-            // In _refreshLayersPanel(), when creating layer items:
-            item.addEventListener('click', e => {
-                if (e.ctrlKey) {
-                    // Multi-select with Ctrl+click
-                    const idx = this.layers.length - 1 - Array.from(list.children).indexOf(item);
-                    const selIdx = this.selectedLayers.indexOf(idx);
-                    
-                    if (selIdx >= 0) {
-                        // Deselect
-                        this.selectedLayers.splice(selIdx, 1);
-                        item.classList.remove('selected');
-                    } else {
-                        // Select
-                        this.selectedLayers.push(idx);
-                        item.classList.add('selected');
-                    }
-                    this._render();
-                } else {
-                    // Single select
-                    this.activeIdx = this.layers.length - 1 - Array.from(list.children).indexOf(item);
-                    this.selectedLayers = [this.activeIdx];
-                    this._refreshLayersPanel();
-                    this._render();
-                }
-            });
-
-            list.appendChild(item);
-        }
-        this._updateStatus();
+    if (idx === this.activeIdx) {
+        item.classList.add('active');
     }
+
+    // Visibility toggle
+    const visToggle = document.createElement('span');
+    visToggle.className = `visibility ${layer.visible ? 'visible' : 'hidden'}`;
+    visToggle.onclick = () => {
+        layer.visible = !layer.visible;
+        this._refreshLayersPanel();
+        this._render();
+    };
+
+    // Layer name
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'layer-name';
+    nameSpan.textContent = layer.name;
+    nameSpan.onclick = () => {
+        this.activeIdx = idx;
+        this._refreshLayersPanel();
+    };
+
+    // Move buttons
+    const moveUp = document.createElement('button');
+    moveUp.className = 'layer-move';
+    moveUp.textContent = '↑';
+    moveUp.onclick = (e) => {
+        e.stopPropagation();
+        this._moveLayerUp(idx);
+    };
+
+    const moveDown = document.createElement('button');
+    moveDown.className = 'layer-move';
+    moveDown.textContent = '↓';
+    moveDown.onclick = (e) => {
+        e.stopPropagation();
+        this._moveLayerDown(idx);
+    };
+
+    // Delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'layer-delete';
+    deleteBtn.textContent = '×';
+    deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        this._deleteLayer(idx);
+    };
+
+    item.appendChild(visToggle);
+    item.appendChild(nameSpan);
+    item.appendChild(moveUp);
+    item.appendChild(moveDown);
+    item.appendChild(deleteBtn);
+    list.appendChild(item);
+    });
+    }
+
+    _bindLayerEvents() {
+        const list = document.getElementById('layersList');
+        let dragIdx = -1;
+        let startY = 0;
+        
+        list.addEventListener('mousedown', e => {
+            if (e.target.classList.contains('layer-item')) {
+                const idx = Array.from(list.children).indexOf(e.target);
+                if (idx !== -1) {
+                    dragIdx = idx;
+                    startY = e.clientY;
+                    e.target.style.opacity = '0.5';
+                }
+            }
+        });
+        
+        list.addEventListener('mousemove', e => {
+            if (dragIdx !== -1) {
+                const dy = e.clientY - startY;
+                if (Math.abs(dy) > 5) {
+                e.target.style.transform = `translateY(${dy}px)`;
+            }
+        }
+    });
+
+    list.addEventListener('mouseup', e => {
+        if (dragIdx !== -1) {
+            const endY = e.clientY;
+            const dy = endY - startY;
+            
+            if (Math.abs(dy) > 10) {
+                const targetIdx = dy < 0 ? dragIdx - 1 : dragIdx + 1;
+                if (targetIdx >= 0 && targetIdx < this.layers.length) {
+                    this._moveLayerTo(dragIdx, targetIdx);
+                }
+            }
+            
+            e.target.style.opacity = '';
+            e.target.style.transform = '';
+            dragIdx = -1;
+        }
+    });
+
+    list.addEventListener('mouseleave', e => {
+        if (dragIdx !== -1) {
+            e.target.style.opacity = '';
+            e.target.style.transform = '';
+            dragIdx = -1;
+        }
+    });
+    }
+
+    _moveLayerTo(fromIdx, toIdx) {
+        this.saveState();
+        const layer = this.layers[fromIdx];
+        this.layers.splice(fromIdx, 1);
+        this.layers.splice(toIdx, 0, layer);
+        this.activeIdx = toIdx;
+        this._refreshLayersPanel();
+        this._render();
+    }
+
 
     _render() {
         // Clear main canvas
@@ -547,122 +674,201 @@ class Editor {
         this.mainCtx.save();
         this.mainCtx.scale(this.zoomLevel, this.zoomLevel);
         
-        // Draw all visible layers
-        for (let i = this.layers.length - 1; i >= 0; i--) {
-            const l = this.layers[i];
-            if (!l.visible) continue;
+        // Draw all visible layers in correct order (bottom to top)
+        for (let i = 0; i < this.layers.length; i++) {
+            const layer = this.layers[i];
             
-            this.mainCtx.save();
-            this.mainCtx.translate(l.x, l.y);
-            if (l.rotation) this.mainCtx.rotate(l.rotation);
-            
-            this.mainCtx.drawImage(l.canvas, 0, 0);
-            
-            this.mainCtx.restore();
+            if (layer.visible) {
+                this.mainCtx.save();
+                
+                // Apply layer transformations
+                this.mainCtx.translate(layer.x, layer.y);
+                if (layer.rotation) {
+                    this.mainCtx.rotate(layer.rotation);
+                }
+                
+                // Draw the layer
+                this.mainCtx.drawImage(layer.canvas, 0, 0);
+                
+                this.mainCtx.restore();
+            }
         }
         
-        // Draw selection if active
+        // Draw selection rectangle
         if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
-            this.mainCtx.strokeStyle = 'rgba(0, 120, 215, 0.7)';
+            this.mainCtx.strokeStyle = '#0095FF';
             this.mainCtx.lineWidth = 2 / this.zoomLevel;
             this.mainCtx.setLineDash([5, 5]);
             this.mainCtx.strokeRect(
-                this.sel.x - 0.5, this.sel.y - 0.5,
-                this.sel.w, this.sel.h
+            this.sel.x, this.sel.y,
+            this.sel.w, this.sel.h
             );
             this.mainCtx.setLineDash([]);
         }
         
-        // Draw circle selection if active
+        // Draw circle selection
         if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
-            this.mainCtx.strokeStyle = 'rgba(0, 120, 215, 0.7)';
+            this.mainCtx.strokeStyle = '#0095FF';
             this.mainCtx.lineWidth = 2 / this.zoomLevel;
             this.mainCtx.beginPath();
             this.mainCtx.ellipse(
-                this.selCircle.cx, this.selCircle.cy,
-                this.selCircle.rx, this.selCircle.ry,
-                0, 0, Math.PI * 2
+            this.selCircle.cx,
+            this.selCircle.cy,
+            this.selCircle.rx,
+            this.selCircle.ry,
+            0, 0, Math.PI * 2
             );
             this.mainCtx.stroke();
         }
         
         this.mainCtx.restore();
-        
         this._updateStatus();
     }
 
 
     _resizeCanvas(w, h) {
-    this.saveState();
+        this.saveState();
         this.mainCanvas.width  = w;
         this.mainCanvas.height = h;
         this.layers.forEach(l => l.resize(w, h));
-        document.getElementById('statusSize').textContent = `Canvas: ${w} × ${h}`;
-        this._render();
+    document.getElementById('statusSize').textContent = `Canvas: ${w} × ${h}`;
+    this._render();
     }
 
-    _floodFill(layer, px, py, color) {
-    this.saveState();
-        const ctx   = layer.ctx;
-        const W     = layer.canvas.width;
-        const H     = layer.canvas.height;
-        const idata = ctx.getImageData(0, 0, W, H);
-        const data  = idata.data;
 
+    _floodFill(layer, px, py, color) {
+        // Validate layer exists
+        const layerIndex = this.layers.indexOf(layer);
+        if (layerIndex === -1) {
+            console.error('Flood fill: Invalid layer');
+            return;
+        }
+        
+        this.saveState();
+        
+        // Use the passed layer, not this.activeLayer
+        const ctx = layer.ctx;
+        const W = layer.canvas.width;
+        const H = layer.canvas.height;
+        
+        // Clamp coordinates to canvas bounds
+        px = Math.max(0, Math.min(W - 1, px));
+        py = Math.max(0, Math.min(H - 1, py));
+        
+        const idata = ctx.getImageData(0, 0, W, H);
+        const data = idata.data;
+        
+        // Color conversion
         const hex2rgb = h => {
             const v = parseInt(h.replace('#',''), 16);
             return [(v>>16)&255, (v>>8)&255, v&255];
         };
         const [fr, fg, fb] = hex2rgb(color);
         const fa = 255;
-
+        
+        // Target pixel check
         const idx = (py * W + px) * 4;
-        const tr  = data[idx], tg = data[idx+1], tb = data[idx+2], ta = data[idx+3];
-
-        if (tr===fr && tg===fg && tb===fb && ta===fa) return;
-
-        const match = i => data[i]===tr && data[i+1]===tg && data[i+2]===tb && data[i+3]===ta;
-        const paint = i => { data[i]=fr; data[i+1]=fg; data[i+2]=fb; data[i+3]=fa; };
-
+        const tr = data[idx], tg = data[idx+1], tb = data[idx+2], ta = data[idx+3];
+        
+        if (tr === fr && tg === fg && tb === fb && ta === fa) return;
+        
+        // Flood fill algorithm
+        const match = i => data[i] === tr && data[i+1] === tg && data[i+2] === tb && data[i+3] === ta;
+        const paint = i => {
+            data[i] = fr;
+            data[i+1] = fg;
+            data[i+2] = fb;
+            data[i+3] = fa;
+        };
+        
         const stack = [idx];
-        const seen  = new Uint8Array(W * H);
-        seen[idx/4]  = 1;
-
+        const seen = new Uint8Array(W * H);
+        seen[idx/4] = 1;
+        
         while (stack.length) {
             const ci = stack.pop();
             paint(ci);
             const pos = ci / 4;
-            const cx  = pos % W | 0;
-            const cy  = pos / W | 0;
+            const cx = pos % W | 0;
+            const cy = pos / W | 0;
+            
             const neighbors = [
-                cx>0   ? [cx-1,cy] : null,
-                cx<W-1 ? [cx+1,cy] : null,
-                cy>0   ? [cx,cy-1] : null,
-                cy<H-1 ? [cx,cy+1] : null
+            cx > 0   ? [cx-1, cy] : null,
+            cx < W-1 ? [cx+1, cy] : null,
+            cy > 0   ? [cx, cy-1] : null,
+            cy < H-1 ? [cx, cy+1] : null
             ];
+            
             for (const n of neighbors) {
                 if (!n) continue;
-                const ni = n[1]*W + n[0];
+                const ni = n[1] * W + n[0];
                 if (seen[ni]) continue;
                 seen[ni] = 1;
-                const pi = ni*4;
+                const pi = ni * 4;
                 if (match(pi)) stack.push(pi);
             }
         }
+        
         ctx.putImageData(idata, 0, 0);
-        this.sel        = null;
-        this.selCircle  = null;
+        this.sel = null;
+        this.selCircle = null;
         this._render();
     }
 
-    _normalizeRect(x1,y1,x2,y2) {
-        return { x: Math.min(x1,x2), y: Math.min(y1,y2), w: Math.abs(x2-x1), h: Math.abs(y2-y1) };
-    }
-
-    _copySelection() {
-        const l = this.activeLayer; if (!l) return;
-
+    _handleFill(x, y) {
+        const l = this.activeLayer;
+        if (!l) return;
+        
+        const px = x - l.x;
+        const py = y - l.y;
+        
         if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
+            // Fill within circle selection
+            l.ctx.save();
+            l.ctx.beginPath();
+            l.ctx.ellipse(
+            this.selCircle.cx - l.x,
+            this.selCircle.cy - l.y,
+            this.selCircle.rx,
+            this.selCircle.ry,
+            0, 0, Math.PI * 2
+            );
+            l.ctx.clip();
+            l.ctx.fillStyle = this.color;
+            l.ctx.fillRect(0, 0, l.canvas.width, l.canvas.height);
+            l.ctx.restore();
+            this.selCircle = null;
+            this._render();
+            } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+                // Fill within rectangle selection
+                l.ctx.save();
+                l.ctx.beginPath();
+                l.ctx.rect(
+                this.sel.x - l.x,
+                this.sel.y - l.y,
+                this.sel.w,
+                this.sel.h
+                );
+                l.ctx.clip();
+                l.ctx.fillStyle = this.color;
+                l.ctx.fillRect(0, 0, l.canvas.width, l.canvas.height);
+                l.ctx.restore();
+                this.sel = null;
+                this._render();
+                } else {
+                    // Flood fill at click position
+                    this._floodFill(l, px, py, this.color);
+                }
+            }
+            
+            _normalizeRect(x1,y1,x2,y2) {
+            return { x: Math.min(x1,x2), y: Math.min(y1,y2), w: Math.abs(x2-x1), h: Math.abs(y2-y1) };
+        }
+        
+        _copySelection() {
+            const l = this.activeLayer; if (!l) return;
+            
+            if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
             const {cx, cy, rx, ry} = this.selCircle;
             const bx = Math.floor(cx - rx), by = Math.floor(cy - ry);
             const bw = Math.ceil(rx * 2),   bh = Math.ceil(ry * 2);
@@ -675,7 +881,7 @@ class Editor {
             tc.clip();
             tc.drawImage(l.canvas, -bx, -by);
             tc.restore();
-            this.clipboard = { type: 'canvas', canvas: tmp };
+        this.clipboard = { type: 'canvas', canvas: tmp };
         } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
             this.clipboard = {
                 type: 'imagedata',
@@ -684,45 +890,45 @@ class Editor {
             };
         }
     }
-    
+
     _saveSelectionAsImage() {
         if (!this.sel || this.sel.w <= 0 || this.sel.h <= 0) {
             alert('No rectangular area selected!');
             return;
         }
-
+        
         const l = this.activeLayer;
         if (!l) return;
-
+        
         const canvas = document.createElement('canvas');
         canvas.width = this.sel.w;
         canvas.height = this.sel.h;
         const ctx = canvas.getContext('2d');
-
+        
         // Draw only the selected portion
         ctx.drawImage(
-            l.canvas,
-            this.sel.x - l.x, this.sel.y - l.y,  // source position
-            this.sel.w, this.sel.h,               // source size
-            0, 0,                                 // destination position
-            this.sel.w, this.sel.h                // destination size
+        l.canvas,
+        this.sel.x - l.x, this.sel.y - l.y,  // source position
+        this.sel.w, this.sel.h,               // source size
+        0, 0,                                 // destination position
+        this.sel.w, this.sel.h                // destination size
         );
-
+        
         // Use the temporary canvas instead of this.canvas
         const data = canvas.toDataURL('image/png');
         const blob = this.dataURLtoBlob(data);
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.download = `selection_${Date.now()}.png`;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+    link.download = `selection_${Date.now()}.png`;
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
     }
 
     _pasteClipboard() {
-    this.saveState();
+        this.saveState();
         if (!this.clipboard) return;
         const nl = this._addLayer('Pasted');
         if (this.clipboard.type === 'canvas') {
@@ -730,223 +936,243 @@ class Editor {
             nl.canvas.height = this.clipboard.canvas.height;
             nl.ctx = nl.canvas.getContext('2d');
             nl.ctx.drawImage(this.clipboard.canvas, 0, 0);
-        } else {
-            nl.ctx.putImageData(this.clipboard.data, 0, 0);
+            } else {
+                nl.ctx.putImageData(this.clipboard.data, 0, 0);
+            }
+            this._render();
         }
-        this._render();
-    }
-
-    _cutSelection() {
-    this.saveState();
-        const l = this.activeLayer; if (!l) return;
-        this._copySelection();
-
-        if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
-            const {cx, cy, rx, ry} = this.selCircle;
-            l.ctx.save();
-            // Clear only inside the ellipse
-            l.ctx.globalCompositeOperation = 'destination-out';
-            l.ctx.beginPath();
-            l.ctx.ellipse(cx - l.x, cy - l.y, rx, ry, 0, 0, Math.PI * 2);
-            l.ctx.fill();
-            l.ctx.restore();
-            this.selCircle = null;
-        } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
-            l.ctx.clearRect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
-            this.sel = null;
-        }
-        this._render();
-    }
-
-    _mergeLayers() {
-    this.saveState();
-        const w = this.mainCanvas.width;
-        const h = this.mainCanvas.height;
-        const merged = new Layer(w, h, 'Merged');
-        this.layers.forEach(l => {
-            if (!l.visible) return;
-            merged.ctx.save();
-            const cx = l.x + l.canvas.width  / 2;
-            const cy = l.y + l.canvas.height / 2;
-            merged.ctx.translate(cx, cy);
-            merged.ctx.rotate(l.rotation);
-            merged.ctx.drawImage(l.canvas, -l.canvas.width / 2, -l.canvas.height / 2);
-            merged.ctx.restore();
-        });
-        this.layers    = [merged];
-        this.activeIdx = 0;
-        this._refreshLayersPanel();
-        this._render();
-    }
-
-    _startContinuousRotate() {
-        this._stopContinuousRotate();
-        this.rotateInterval = setInterval(() => {
+        
+        _cutSelection() {
+            this.saveState();
             const l = this.activeLayer; if (!l) return;
-            l.rotation += 0.02; // ~1.1 deg per frame
-            document.getElementById('statusRotate').textContent =
-                `Rotation: ${Math.round(l.rotation * 180 / Math.PI)}°`;
+            this._copySelection();
+            
+            if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
+                const {cx, cy, rx, ry} = this.selCircle;
+                l.ctx.save();
+                // Clear only inside the ellipse
+                l.ctx.globalCompositeOperation = 'destination-out';
+                l.ctx.beginPath();
+                l.ctx.ellipse(cx - l.x, cy - l.y, rx, ry, 0, 0, Math.PI * 2);
+                l.ctx.fill();
+                l.ctx.restore();
+                this.selCircle = null;
+            } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+                l.ctx.clearRect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
+                this.sel = null;
+            }
+            this._render();
+        }
+        
+        _mergeLayers() {
+            this.saveState();
+            const w = this.mainCanvas.width;
+            const h = this.mainCanvas.height;
+            const merged = new Layer(w, h, 'Merged');
+            this.layers.forEach(l => {
+                if (!l.visible) return;
+                merged.ctx.save();
+                const cx = l.x + l.canvas.width  / 2;
+                const cy = l.y + l.canvas.height / 2;
+                merged.ctx.translate(cx, cy);
+                merged.ctx.rotate(l.rotation);
+                merged.ctx.drawImage(l.canvas, -l.canvas.width / 2, -l.canvas.height / 2);
+                merged.ctx.restore();
+            });
+            this.layers    = [merged];
+            this.activeIdx = 0;
+            this._refreshLayersPanel();
+            this._render();
+        }
+        
+        _startContinuousRotate() {
+            this._stopContinuousRotate();
+            this.rotateInterval = setInterval(() => {
+                const l = this.activeLayer; if (!l) return;
+                l.rotation += 0.02; // ~1.1 deg per frame
+                document.getElementById('statusRotate').textContent =
+            `Rotation: ${Math.round(l.rotation * 180 / Math.PI)}°`;
             this._render();
         }, 16);
     }
     _stopContinuousRotate() {
-    
-        if (this.rotateInterval) { clearInterval(this.rotateInterval); this.rotateInterval = null; }
+        
+    if (this.rotateInterval) { 
+        clearInterval(this.rotateInterval); this.rotateInterval = null; }
     }
 
     _canvasXY(e) {
         const r = this.mainCanvas.getBoundingClientRect();
-        return { x: Math.round(e.clientX - r.left), y: Math.round(e.clientY - r.top) };
+    return { x: Math.round(e.clientX - r.left), y: Math.round(e.clientY - r.top) };
     }
 
     _bindCanvas() {
         const cv = this.mainCanvas;
         cv.addEventListener('contextmenu', e => e.preventDefault());
-
+        
         cv.addEventListener('mousedown', e => {
-            const {x, y} = this._canvasXY(e);
+        const {x, y} = this._canvasXY(e);
+        
+        /* Middle mouse = drag active layer */
+        if (e.button === 1) {
+            e.preventDefault();
+            const l = this.activeLayer; if (!l) return;
+            this.dragLayer = l;
+            this.dragOffX  = x - l.x;
+            this.dragOffY  = y - l.y;
+            return;
+        }
+        
+        if (e.button !== 0) return;
+        
+        switch (this.tool) {
+            
+            case 'select':
+            this.selCircle   = null;
+            this.selDrawing  = true;
+            this.selStartX   = x;
+            this.selStartY   = y;
+        this.sel         = { x, y, w: 0, h: 0 };
+        break;
+        
+        case 'selectcircle':
+        this.sel               = null;
+        this.selCircleDrawing  = true;
+        this.selCircleStartX   = x;
+        this.selCircleStartY   = y;
+    this.selCircle         = { cx: x, cy: y, rx: 0, ry: 0 };
+    break;
 
-            /* Middle mouse = drag active layer */
-            if (e.button === 1) {
-                e.preventDefault();
-                const l = this.activeLayer; if (!l) return;
-                this.dragLayer = l;
-                this.dragOffX  = x - l.x;
-                this.dragOffY  = y - l.y;
-                return;
+    case 'eraser':
+    this.eraserDrawing = true;
+    this._erase(x, y);
+    break;
+
+    case 'fill': {
+        const l = this.activeLayer; if (!l) return;
+        const px = x - l.x, py = y - l.y;
+        
+        if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
+        const {cx, cy, rx, ry} = this.selCircle;
+        l.ctx.save();
+        l.ctx.beginPath();
+        l.ctx.ellipse(cx - l.x, cy - l.y, rx, ry, 0, 0, Math.PI * 2);
+        l.ctx.clip();
+        l.ctx.fillStyle = this.color;
+        l.ctx.fill();
+        l.ctx.restore();
+        this.selCircle = null;
+        this._render();
+        } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+            l.ctx.save();
+            l.ctx.beginPath();
+            l.ctx.rect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
+            l.ctx.clip();
+            l.ctx.fillStyle = this.color;
+            l.ctx.fillRect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
+            l.ctx.restore();
+            this.sel = null;
+            this._render();
+            } else {
+                this._floodFill(l, px, py, this.color);
             }
+            break;
+        }
+        
+        case 'text':
+    this.textPending = {x, y};
+    this._openTextModal();
+    break;
 
-            if (e.button !== 0) return;
+    case 'rotate': {
+        this.rotateActive = true;
+        this.rotateDragX  = x;
+        this._startContinuousRotate();
+        break;
+    }
+    }
+    });
 
-            switch (this.tool) {
+    cv.addEventListener('mousemove', e => {
+    const { x, y } = this._canvasXY(e);
+    document.getElementById('statusCoords').textContent =
+    `X: ${Math.round(x)}  Y: ${Math.round(y)}`;
 
-                case 'select':
-                    this.selCircle   = null;
-                    this.selDrawing  = true;
-                    this.selStartX   = x;
-                    this.selStartY   = y;
-                    this.sel         = { x, y, w: 0, h: 0 };
-                    break;
+    if (this.dragLayer) {
+        this.dragLayer.x = x - this.dragOffX;
+        this.dragLayer.y = y - this.dragOffY;
+        this._render();
+        return;
+    }
 
-                case 'selectcircle':
-                    this.sel               = null;
-                    this.selCircleDrawing  = true;
-                    this.selCircleStartX   = x;
-                    this.selCircleStartY   = y;
-                    this.selCircle         = { cx: x, cy: y, rx: 0, ry: 0 };
-                    break;
+    if (this.selDrawing && this.tool === 'select') {
+        this.sel = this._normalizeRect(this.selStartX, this.selStartY, x, y);
+        this._render();
+        return;
+    }
 
-                case 'eraser':
-                    this.eraserDrawing = true;
-                    this._erase(x, y);
-                    break;
+    if (this.selCircleDrawing && this.tool === 'selectcircle') {
+        const rx = Math.abs(x - this.selCircleStartX) / 2;
+        const ry = Math.abs(y - this.selCircleStartY) / 2;
+        const cx = (x + this.selCircleStartX) / 2;
+        const cy = (y + this.selCircleStartY) / 2;
+    this.selCircle = { cx, cy, rx, ry };
+    this._render();
+    return;
+    }
 
-                case 'fill': {
-                    const l = this.activeLayer; if (!l) return;
-                    const px = x - l.x, py = y - l.y;
+    if (this.tool === 'pencil') {
+        this._continueDrawing(x, y);
+        } else if (this.tool === 'eraser') {
+            this._continueErasing(x, y);
+        }
+    });
 
-                    if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
-                        const {cx, cy, rx, ry} = this.selCircle;
-                        l.ctx.save();
-                        l.ctx.beginPath();
-                        l.ctx.ellipse(cx - l.x, cy - l.y, rx, ry, 0, 0, Math.PI * 2);
-                        l.ctx.clip();
-                        l.ctx.fillStyle = this.color;
-                        l.ctx.fill();
-                        l.ctx.restore();
-                        this.selCircle = null;
-                        this._render();
-                    } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
-                        l.ctx.save();
-                        l.ctx.beginPath();
-                        l.ctx.rect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
-                        l.ctx.clip();
-                        l.ctx.fillStyle = this.color;
-                        l.ctx.fillRect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
-                        l.ctx.restore();
-                        this.sel = null;
-                        this._render();
-                    } else {
-                        this._floodFill(l, px, py, this.color);
-                    }
-                    break;
-                }
-
-                case 'text':
-                    this.textPending = {x, y};
-                    this._openTextModal();
-                    break;
-
-                case 'rotate': {
-                    this.rotateActive = true;
-                    this.rotateDragX  = x;
-                    this._startContinuousRotate();
-                    break;
-                }
+    cv.addEventListener('mouseup', e => {
+        if (this.dragLayer) {
+            this.dragLayer = null;
+            this.mainCanvas.style.cursor = 'crosshair';
+        }
+        
+        if (this.selDrawing) {
+            this.selDrawing = false;
+            if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+                // Selection complete
             }
-        });
-
-        cv.addEventListener('mousemove', e => {
-            const {x, y} = this._canvasXY(e);
-            document.getElementById('statusCoords').textContent = `X: ${x}  Y: ${y}`;
-
-            if (this.dragLayer) {
-                this.dragLayer.x = x - this.dragOffX;
-                this.dragLayer.y = y - this.dragOffY;
-                this._render();
-                return;
+        }
+        
+        if (this.selCircleDrawing) {
+            this.selCircleDrawing = false;
+            if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
+                // Circle selection complete
             }
+        }
+        
+        if (this.tool === 'pencil' || this.tool === 'eraser') {
+            this._stopDrawing();
+        }
+    });
 
-            if (this.selDrawing && this.tool === 'select') {
-                this.sel = this._normalizeRect(this.selStartX, this.selStartY, x, y);
-                this._render();
-                return;
-            }
+    cv.addEventListener('mouseleave', () => {
+        if (this.dragLayer) {
+            this.dragLayer = null;
+            this.mainCanvas.style.cursor = 'crosshair';
+        }
+        if (this.selDrawing) {
+            this.selDrawing = false;
+        }
+        if (this.selCircleDrawing) {
+            this.selCircleDrawing = false;
+        }
+        if (this.tool === 'pencil' || this.tool === 'eraser') {
+            this._stopDrawing();
+        }
+    });
 
-            if (this.selCircleDrawing && this.tool === 'selectcircle') {
-                const rx = Math.abs(x - this.selCircleStartX) / 2;
-                const ry = Math.abs(y - this.selCircleStartY) / 2;
-                const cx = (x + this.selCircleStartX) / 2;
-                const cy = (y + this.selCircleStartY) / 2;
-                this.selCircle = { cx, cy, rx, ry };
-                this._render();
-                return;
-            }
-
-            if (this.eraserDrawing && this.tool === 'eraser') {
-                this._erase(x, y);
-                return;
-            }
-
-            // Rotate drag: dragging right = clockwise, left = counter
-            if (this.rotateActive && this.tool === 'rotate') {
-                this._stopContinuousRotate(); // switch to drag mode
-                const l = this.activeLayer; if (!l) return;
-                const dx = x - this.rotateDragX;
-                l.rotation += dx * 0.01;
-                this.rotateDragX = x;
-                document.getElementById('statusRotate').textContent =
-                    `Rotation: ${Math.round(l.rotation * 180 / Math.PI)}°`;
-                this._render();
-            }
-        });
-
-        const stopAll = () => {
-            this.dragLayer         = null;
-            this.selDrawing        = false;
-            this.selCircleDrawing  = false;
-            this.eraserDrawing     = false;
-            if (this.rotateActive) {
-                this._stopContinuousRotate();
-                this.rotateActive = false;
-            }
-        };
-        cv.addEventListener('mouseup',    stopAll);
-        cv.addEventListener('mouseleave', stopAll);
     }
 
     _erase(x, y) {
-    this.saveState();
+        this.saveState();
         const l = this.activeLayer; if (!l) return;
         const px = x - l.x, py = y - l.y;
         const s  = this.eraserSize;
@@ -959,11 +1185,11 @@ class Editor {
         document.getElementById('textInput').value = '';
         document.getElementById('textInput').focus();
     }
-    
+
     _openCSSEditor() {
         document.getElementById('effectEditorWindow').classList.add('open');
     }
-    
+
     _closeCSSModal() {
         document.getElementById('effectEditorWindow').classList.remove('open');
     }
@@ -971,7 +1197,7 @@ class Editor {
     _closeTextModal() {
         document.getElementById('textModal').classList.remove('open');
     }
-    
+
     _effects() {
         this.saveState();
         const effect = document.getElementById('effects').value.trim();
@@ -979,37 +1205,37 @@ class Editor {
         switch(effect) {
             case 'blur':
             this._blur(layer,5);
-            break;  
+            break;
             case 'dropshadow':
             this._dropshadow(layer, 5);
             break;
             case 'brightness':
             this._brightness(layer, 50);
-            break; 
+            break;
             case 'noise':
             this._noise(layer, 5);
             break;
-					case 'contrast':
-						this._minimalEffect("contrast", layer);
-						break;
-					case 'grayscale':
-						this._minimalEffect("grayscale", layer);
-						break;
-					case 'hue':
-						this._minimalEffect("hue", layer);
-						break;
-					case 'invert':
-						this._minimalEffect("invert", layer);
-						break;
-					case 'opacity':
-						this._minimalEffect("opacity", layer);
-						break;
-					case 'saturate':
-						this._minimalEffect("saturate", layer);
-						break;
-					case 'sepia':
-						this._minimalEffect("sepia", layer);
-                        break;
+            case 'contrast':
+            this._minimalEffect("contrast", layer);
+            break;
+            case 'grayscale':
+            this._minimalEffect("grayscale", layer);
+            break;
+            case 'hue':
+            this._minimalEffect("hue", layer);
+            break;
+            case 'invert':
+            this._minimalEffect("invert", layer);
+            break;
+            case 'opacity':
+            this._minimalEffect("opacity", layer);
+            break;
+            case 'saturate':
+            this._minimalEffect("saturate", layer);
+            break;
+            case 'sepia':
+            this._minimalEffect("sepia", layer);
+            break;
             case 'scrap':
             this._paper('scrap',layer);
             break;
@@ -1021,7 +1247,7 @@ class Editor {
             break;
             case 'waves':
             this._waves(layer, 'sin', 10, 0.05);
-            break;      
+            break;
             case 'sine':
             // Gentle sine wave (default)
             this._waves(layer, 'sin', 15, 0.04);
@@ -1041,14 +1267,14 @@ class Editor {
             case 'sawtooth':
             // Sawtooth wave (triangular)
             this._waves(layer, 'sawtooth', 25, 0.03);
-            break;            
+            break;
         }
         
         this._render();
     }
 
     // EFFECTS ---------------------------------------------------------
-                        
+
     _minimalEffect(method, l, param = 180) {
         l.ctx.save();
         switch(method) {
@@ -1057,7 +1283,7 @@ class Editor {
             break;
             case 'grayscale':
             l.ctx.filter = `grayscale(100)`;
-            break;        
+            break;
             case 'hue':
             l.ctx.filter = `hue-rotate(90)`;
             break;
@@ -1093,210 +1319,210 @@ class Editor {
             let waveOffset;
             waveOffset = Math.tan(y * frequency) * (Math.random() * amplitude );
             for (let x = 0; x < canvas.width; x++) {
-
+                
                 if(method == 'finegrain') {
-                const srcX = x;
+                    const srcX = x;
                     if (srcX >= 0 && srcX < canvas.width) {
                         l.ctx.drawImage(
-                            tempCanvas,
-                            srcX, Math.random() + y, 1, 1,
-                            x, Math.random() + y, 1, 1
+                        tempCanvas,
+                        srcX, Math.random() + y, 1, 1,
+                        x, Math.random() + y, 1, 1
                         );
                     }
-                } else if(method == 'ricepaper') {
-                const srcX = x;
-                    if (srcX >= 0 && srcX < canvas.width) {
-                        l.ctx.drawImage(
+                    } else if(method == 'ricepaper') {
+                        const srcX = x;
+                        if (srcX >= 0 && srcX < canvas.width) {
+                            l.ctx.drawImage(
                             tempCanvas,
                             srcX, Math.random() + y, 1, 1,
                             x, Math.random() + y + (y * 2), 1, 1
-                        );
-                    }
-                } else {
-                const srcX = x + waveOffset;
-                    if (srcX >= 0 && srcX < canvas.width) {
-                        l.ctx.drawImage(
-                            tempCanvas,
-                            srcX, y, 1, 1,
-                            x, y, 1, 1
-                        );
+                            );
+                        }
+                        } else {
+                            const srcX = x + waveOffset;
+                            if (srcX >= 0 && srcX < canvas.width) {
+                                l.ctx.drawImage(
+                                tempCanvas,
+                                srcX, y, 1, 1,
+                                x, y, 1, 1
+                                );
+                            }
+                        }
                     }
                 }
+                l.ctx.restore();
             }
-        }
-        l.ctx.restore();
-    }
-  
-    _waves(l, method = 'sin', amplitude = 10, frequency = 0.05, maxOffset = 50) {
-        l.ctx.save();
-        const canvas = l.ctx.canvas;
-        const imageData = l.ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = canvas.height;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.putImageData(imageData, 0, 0);
-
-        l.ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        for (let y = 0; y < canvas.height; y++) {
-            let waveOffset;
-            switch(method) {
-                case 'tan':
-                    waveOffset = Math.tan(y * frequency) * amplitude;
-                    // Clamp extreme values
-                    waveOffset = Math.min(Math.max(waveOffset, -maxOffset), maxOffset);
-                    break;
-                case 'cos':
-                    waveOffset = Math.cos(y * frequency) * amplitude;
-                    break;
-                case 'square':
-                    waveOffset = (Math.sin(y * frequency * 2) > 0 ? 1 : -1) * amplitude;
-                    break;
-                case 'sawtooth':
-                    waveOffset = (y * frequency % 1) * amplitude * 2 - amplitude;
-                    break;
-                default: // 'sin'
-                    waveOffset = Math.sin(y * frequency) * amplitude;
-            }
-
-            for (let x = 0; x < canvas.height; x++) {
-                const srcX = x + waveOffset;
-                if (srcX >= 0 && srcX < canvas.height) {
-                    l.ctx.drawImage(tempCanvas, srcX, y, 1, 1, x, y, 1, 1);
+            
+            _waves(l, method = 'sin', amplitude = 10, frequency = 0.05, maxOffset = 50) {
+                l.ctx.save();
+                const canvas = l.ctx.canvas;
+                const imageData = l.ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.putImageData(imageData, 0, 0);
+                
+                l.ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                for (let y = 0; y < canvas.height; y++) {
+                    let waveOffset;
+                    switch(method) {
+                        case 'tan':
+                        waveOffset = Math.tan(y * frequency) * amplitude;
+                        // Clamp extreme values
+                        waveOffset = Math.min(Math.max(waveOffset, -maxOffset), maxOffset);
+                        break;
+                        case 'cos':
+                        waveOffset = Math.cos(y * frequency) * amplitude;
+                        break;
+                        case 'square':
+                        waveOffset = (Math.sin(y * frequency * 2) > 0 ? 1 : -1) * amplitude;
+                        break;
+                        case 'sawtooth':
+                        waveOffset = (y * frequency % 1) * amplitude * 2 - amplitude;
+                        break;
+                        default: // 'sin'
+                        waveOffset = Math.sin(y * frequency) * amplitude;
+                    }
+                    
+                    for (let x = 0; x < canvas.height; x++) {
+                        const srcX = x + waveOffset;
+                        if (srcX >= 0 && srcX < canvas.height) {
+                            l.ctx.drawImage(tempCanvas, srcX, y, 1, 1, x, y, 1, 1);
+                        }
+                    }
                 }
+                
+                l.ctx.restore();
             }
+            
+            _noise(l, intensity = 0.1) {
+                l.ctx.save(); // Save current state
+                const imageData = l.ctx.getImageData(0, 0, l.ctx.canvas.width, l.ctx.canvas.height);
+                const data = imageData.data;
+                
+                for (let i = 0; i < data.length; i++) {
+                    // Apply noise to each channel (R, G, B, A)
+                    data[i] += (Math.random() - 0.5) * 255 * intensity;
+                    // Clamp values between 0-255
+                    data[i] = Math.max(0, Math.min(255, data[i]));
+                }
+                
+                l.ctx.putImageData(imageData, 0, 0);
+                l.ctx.restore(); // Restore to original state
+            }
+            
+            _brightness(l, value = 10) {
+                l.ctx.save();
+                const imageData = l.ctx.getImageData(0, 0, l.ctx.canvas.width, l.ctx.canvas.height);
+                for (let i = 0; i < imageData.data.length; i += 4) {
+                    imageData.data[i] += value;     // Red
+                    imageData.data[i+1] += value;   // Green
+                    imageData.data[i+2] += value;   // Blue
+                }
+                l.ctx.putImageData(imageData, 0, 0);
+                l.ctx.restore(); // Restore to original state
+            }
+            
+            _blur(l, radius = 25) {
+                l.ctx.save();
+            l.ctx.filter = `blur(${radius}px)`;
+            l.ctx.drawImage(l.canvas, 0, 0);
+            //l.ctx.filter = 'none'; // Reset filter
+            l.ctx.restore();
         }
-
-        l.ctx.restore();
-    }
-
-    _noise(l, intensity = 0.1) {
-        l.ctx.save(); // Save current state
-        const imageData = l.ctx.getImageData(0, 0, l.ctx.canvas.width, l.ctx.canvas.height);
-        const data = imageData.data;
-
-        for (let i = 0; i < data.length; i++) {
-            // Apply noise to each channel (R, G, B, A)
-            data[i] += (Math.random() - 0.5) * 255 * intensity;
-            // Clamp values between 0-255
-            data[i] = Math.max(0, Math.min(255, data[i]));
+        
+        _dropshadow(l, radius = 5) {
+            // Save the current context state
+            l.ctx.save();
+            
+            // Set shadow properties
+            l.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            l.ctx.shadowBlur = radius;
+            l.ctx.shadowOffsetX = radius;
+            l.ctx.shadowOffsetY = radius;
+            
+            // Draw the layer's content (which will cast the shadow)
+            l.ctx.drawImage(l.canvas, 0, 0);
+            
+            // Restore the context to remove the shadow
+            l.ctx.restore();
         }
+        
+        _insertText() {
+            
+            this.saveState();
+            
+            const text = document.getElementById('textInput').value.trim();
+            
+            let fontface = document.getElementById('fontFace').value || 'Arial';
+            let fontfaces = document.getElementById('fontFaces').value;
+            
+            const serif = document.getElementById('serif').value || 'sans-serif';
+            const size = parseInt(document.getElementById('fontSizeInput').value) || 24;
+            
+        if(fontfaces != "") { fontface = fontfaces; }
+        
+    if (!text || !this.textPending) { this._closeTextModal(); return; }
 
-        l.ctx.putImageData(imageData, 0, 0);
-        l.ctx.restore(); // Restore to original state
+    const {x, y} = this.textPending;
+    this.textPending = null;
+
+    /* 1. Measure text accurately */
+    const tmp = document.createElement('canvas').getContext('2d');
+    tmp.font = `${size}px ${fontface}, ${serif}`; // Chrome likes explicit bold/regular
+    const metrics = tmp.measureText(text);
+    const tw = Math.ceil(metrics.width) * 12; // generous padding
+    const th = size + 24; // extra headroom
+
+    /* 2. Create layer */
+    const nl = this._addLayer(`Text: "${text.slice(0,12)}"`);
+    nl.canvas.width  = tw;
+    nl.canvas.height = th;
+    nl.ctx = nl.canvas.getContext('2d');
+
+    /* 3. Draw centered */
+    nl.ctx.font         = `${size}px ${fontface}, ${serif}`;
+    nl.ctx.fillStyle    = this.color;
+    nl.ctx.textBaseline = 'middle';
+    nl.ctx.textAlign    = 'left';
+    nl.ctx.fillText(text, tw/2, th/2);
+
+    /* 4. Position layer so the click point is the text center */
+    nl.x = x - tw/2;
+    nl.y = y - th/2;
+
+    this._closeTextModal();
+    this._render();
     }
 
-    _brightness(l, value = 10) {
-    l.ctx.save();
-    const imageData = l.ctx.getImageData(0, 0, l.ctx.canvas.width, l.ctx.canvas.height);
-      for (let i = 0; i < imageData.data.length; i += 4) {
-        imageData.data[i] += value;     // Red
-        imageData.data[i+1] += value;   // Green
-        imageData.data[i+2] += value;   // Blue
-      }
-        l.ctx.putImageData(imageData, 0, 0);
-        l.ctx.restore(); // Restore to original state
-    }
-    
-    _blur(l, radius = 25) {
-        l.ctx.save();
-        l.ctx.filter = `blur(${radius}px)`;
-        l.ctx.drawImage(l.canvas, 0, 0);
-        //l.ctx.filter = 'none'; // Reset filter
-        l.ctx.restore();
-    }
-
-    _dropshadow(l, radius = 5) {
-        // Save the current context state
-        l.ctx.save();
-
-        // Set shadow properties
-        l.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        l.ctx.shadowBlur = radius;
-        l.ctx.shadowOffsetX = radius;
-        l.ctx.shadowOffsetY = radius;
-
-        // Draw the layer's content (which will cast the shadow)
-        l.ctx.drawImage(l.canvas, 0, 0);
-
-        // Restore the context to remove the shadow
-        l.ctx.restore();
-    }
-
-    _insertText() {
-    
-        this.saveState();
-        
-        const text = document.getElementById('textInput').value.trim();
-        
-        let fontface = document.getElementById('fontFace').value || 'Arial';
-        let fontfaces = document.getElementById('fontFaces').value;
-        
-        const serif = document.getElementById('serif').value || 'sans-serif';
-        const size = parseInt(document.getElementById('fontSizeInput').value) || 24;
-        
-        if(fontfaces != "") { fontface = fontfaces; } 
-        
-        if (!text || !this.textPending) { this._closeTextModal(); return; }
-
-        const {x, y} = this.textPending;
-        this.textPending = null;
-
-        /* 1. Measure text accurately */
-        const tmp = document.createElement('canvas').getContext('2d');
-        tmp.font = `${size}px ${fontface}, ${serif}`; // Chrome likes explicit bold/regular
-        const metrics = tmp.measureText(text);
-        const tw = Math.ceil(metrics.width) * 12; // generous padding
-        const th = size + 24; // extra headroom
-
-        /* 2. Create layer */
-        const nl = this._addLayer(`Text: "${text.slice(0,12)}"`);
-        nl.canvas.width  = tw;
-        nl.canvas.height = th;
-        nl.ctx = nl.canvas.getContext('2d');
-
-        /* 3. Draw centered */
-        nl.ctx.font         = `${size}px ${fontface}, ${serif}`;
-        nl.ctx.fillStyle    = this.color;
-        nl.ctx.textBaseline = 'middle';
-        nl.ctx.textAlign    = 'left';
-        nl.ctx.fillText(text, tw/2, th/2);
-
-        /* 4. Position layer so the click point is the text center */
-        nl.x = x - tw/2;
-        nl.y = y - th/2;
-
-        this._closeTextModal();
-        this._render();
-    }
-    
     _resizeLayerPercent(layer, percent) {
         this.saveState();
-
+        
         // Get current dimensions
         const originalWidth = layer.canvas.width;
         const originalHeight = layer.canvas.height;
-
+        
         // Calculate new dimensions
         const newWidth = Math.round(originalWidth * (percent / 100));
         const newHeight = Math.round(originalHeight * (percent / 100));
-
+        
         // Create temporary canvas to preserve content
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = originalWidth;
         tempCanvas.height = originalHeight;
         const tempCtx = tempCanvas.getContext('2d');
         tempCtx.drawImage(layer.canvas, 0, 0);
-
+        
         // Resize the layer's canvas
         layer.canvas.width = newWidth;
         layer.canvas.height = newHeight;
         layer.ctx = layer.canvas.getContext('2d');
-
+        
         // Draw the preserved content at the new size
         layer.ctx.drawImage(tempCanvas, 0, 0, newWidth, newHeight);
-
+        
         this._render();
         this._refreshLayersPanel();
     }
@@ -1304,12 +1530,12 @@ class Editor {
     _applyCSS() {
         this.saveState();
         const csscode = document.getElementById('cssInput').value.trim();
-
+        
         if (!csscode) {
             alert('Please enter CSS rules first');
             return;
         }
-
+        
         const layer = this.activeLayer;
         const canvas = layer.ctx.canvas;
         canvas.style.cssText = csscode;
@@ -1341,10 +1567,6 @@ class Editor {
     _saveFile() {
         try {
             const data = this.mainCanvas.toDataURL('image/png');
-            
-            // Display image
-            // document.getElementById('resultingImage').src = data;
-            
             // Download
             const blob = this.dataURLtoBlob(data);
             const url = URL.createObjectURL(blob);
@@ -1368,7 +1590,7 @@ class Editor {
         for (let i = 0; i < binary.length; i++) {
             arr[i] = binary.charCodeAt(i);
         }
-        return new Blob([arr], { type: mime });
+    return new Blob([arr], { type: mime });
     }
 
     _bindToolbar() {
@@ -1379,130 +1601,130 @@ class Editor {
                 this.tool = btn.dataset.tool;
                 this._stopContinuousRotate();
                 this.rotateActive = false;
-
+                
                 const cursors = {
                     pointer: 'default', select: 'crosshair', selectcircle: 'crosshair',
                     eraser: 'cell', fill: 'crosshair', text: 'text', rotate: 'grab'
                 };
                 this.mainCanvas.style.cursor = cursors[this.tool] || 'crosshair';
-                document.getElementById('statusTool').textContent = `Tool: ${btn.title.split(' (')[0]}`;
-            });
+            document.getElementById('statusTool').textContent = `Tool: ${btn.title.split(' (')[0]}`;
         });
+    });
 
-        document.getElementById('colorPicker').addEventListener('input', e => {
-            this.color = e.target.value;
-        });
-        document.getElementById('qualitySlider').addEventListener('input', e => {
-            this.quality = e.target.value / 100;
-            //document.getElementById('qualityVal').textContent = e.target.value + '%';
-        });
-        document.getElementById('btnZoomIn').addEventListener('click', () => this.zoomIn());
-        document.getElementById('btnZoomOut').addEventListener('click', () => this.zoomOut());
+    document.getElementById('colorPicker').addEventListener('input', e => {
+        this.color = e.target.value;
+    });
+    document.getElementById('qualitySlider').addEventListener('input', e => {
+        this.quality = e.target.value / 100;
+        //document.getElementById('qualityVal').textContent = e.target.value + '%';
+    });
+    document.getElementById('btnZoomIn').addEventListener('click', () => this.zoomIn());
+    document.getElementById('btnZoomOut').addEventListener('click', () => this.zoomOut());
+
+    document.getElementById('btnResizeLayer').addEventListener('click', () => {
+        const layer = this.activeLayer;
+        if (!layer) {
+            alert("No active layer to resize");
+            return;
+        }
         
-        document.getElementById('btnResizeLayer').addEventListener('click', () => {
-            const layer = this.activeLayer;
-            if (!layer) {
-                alert("No active layer to resize");
-                return;
-            }
-
-            const percent = parseFloat(document.getElementById('resizePercent').value);
-            if (percent <= 0) {
-                alert("Percentage must be greater than 0");
-                return;
-            }
-
-            this._resizeLayerPercent(layer, percent);
-        });
- 
-        document.getElementById('btnSaveSel').addEventListener('click', () => {
-            this._saveSelectionAsImage();
-        });
+        const percent = parseFloat(document.getElementById('resizePercent').value);
+        if (percent <= 0) {
+            alert("Percentage must be greater than 0");
+            return;
+        }
         
-        document.getElementById('effects').addEventListener('change', () => {
-            this._effects();
-        });    
+        this._resizeLayerPercent(layer, percent);
+    });
+
+    document.getElementById('btnSaveSel').addEventListener('click', () => {
+        this._saveSelectionAsImage();
+    });
+
+    document.getElementById('effects').addEventListener('change', () => {
+        this._effects();
+    });
     }
 
     _bindKeys() {
         document.addEventListener('keydown', e => {
             if (document.getElementById('textModal').classList.contains('open')) return;
-
+            
             if (e.ctrlKey) {
                 switch(e.key.toLowerCase()) {
-                case 'o': e.preventDefault(); this._openFile();       break;
-                case 's': e.preventDefault(); this._saveFile();       break;
-                case 'c': e.preventDefault(); this._copySelection();  break;
-                case 'v': e.preventDefault(); this._pasteClipboard(); break;
-                case 'x': e.preventDefault(); this._cutSelection();   break;
-                case 'z': e.preventDefault(); this.undo();            break;
-                case 'e': e.preventDefault(); this._mergeSelectedLayers(); break;
-                case 'a':
+                    case 'o': e.preventDefault(); this._openFile();       break;
+                    case 's': e.preventDefault(); this._saveFile();       break;
+                    case 'c': e.preventDefault(); this._copySelection();  break;
+                    case 'v': e.preventDefault(); this._pasteClipboard(); break;
+                    case 'x': e.preventDefault(); this._cutSelection();   break;
+                    case 'z': e.preventDefault(); this.undo();            break;
+                    case 'e': e.preventDefault(); this._mergeSelectedLayers(); break;
+                    case 'a':
                     e.preventDefault();
-                    this.sel = {x:0, y:0, w:this.mainCanvas.width, h:this.mainCanvas.height};
-                    document.querySelector('[data-tool="select"]').click();
-                    this._render();
-                    break;
-                }
-                return;
+                this.sel = {x:0, y:0, w:this.mainCanvas.width, h:this.mainCanvas.height};
+                document.querySelector('[data-tool="select"]').click();
+                this._render();
+                break;
             }
-
-            switch(e.key.toLowerCase()) {
-                case 'v': document.querySelector('[data-tool="pointer"]').click();      break;
-                case 's': document.querySelector('[data-tool="select"]').click();       break;
-                case 'c': document.querySelector('[data-tool="selectcircle"]').click(); break;
-                case 'e': document.querySelector('[data-tool="eraser"]').click();       break;
-                case 'f': document.querySelector('[data-tool="fill"]').click();         break;
-                case 't': document.querySelector('[data-tool="text"]').click();         break;
-                case 'r': document.querySelector('[data-tool="rotate"]').click();       break;
-                case 'escape':
-                    this.sel       = null;
-                    this.selCircle = null;
-                    this._render();
-                    break;
-            }
-        });
+            return;
+        }
+        
+        switch(e.key.toLowerCase()) {
+            case 'v': document.querySelector('[data-tool="pointer"]').click();      break;
+            case 's': document.querySelector('[data-tool="select"]').click();       break;
+            case 'c': document.querySelector('[data-tool="selectcircle"]').click(); break;
+            case 'e': document.querySelector('[data-tool="eraser"]').click();       break;
+            case 'f': document.querySelector('[data-tool="fill"]').click();         break;
+            case 't': document.querySelector('[data-tool="text"]').click();         break;
+            case 'r': document.querySelector('[data-tool="rotate"]').click();       break;
+            case 'escape':
+            this.sel       = null;
+            this.selCircle = null;
+            this._render();
+            break;
+        }
+    });
     }
 
     _bindUI() {
         document.getElementById('btnOpen').addEventListener('click', () => this._openFile());
         document.getElementById('btnSave').addEventListener('click', () => this._saveFile());
-
+        
         document.getElementById('btnResize').addEventListener('click', () => {
             const w = parseInt(document.getElementById('inputW').value);
             const h = parseInt(document.getElementById('inputH').value);
             if (w > 0 && h > 0) this._resizeCanvas(w, h);
         });
-
+        
         document.getElementById('btnDupLayer').addEventListener('click', () => {
             if (this.activeIdx >= 0) this._duplicateLayer(this.activeIdx);
         });
-
+        
         document.getElementById('btnNewLayer').addEventListener('click', () => this._addLayer());
         document.getElementById('btnDelLayer').addEventListener('click', () => this._deleteLayer(this.activeIdx));
-
+        
         document.getElementById('btnTextOk').addEventListener('click',    () => this._insertText());
         document.getElementById('applyCss').addEventListener('click',    () => this._applyCSS());
         //document.getElementById('btnEffectsEditor').addEventListener('click',    () => this._openCSSEditor());
-        document.getElementById('btnTextCancel').addEventListener('click', () => { this.textPending = null; this._closeTextModal(); });
-        //document.getElementById('cancelCss').addEventListener('click', () => { this._closeCSSModal(); });
-        document.getElementById('textInput').addEventListener('keydown', e => {
-            if (e.key === 'Enter')  this._insertText();
-            if (e.key === 'Escape') { this.textPending = null; this._closeTextModal(); }
-        });
+    document.getElementById('btnTextCancel').addEventListener('click', () => { this.textPending = null; this._closeTextModal(); });
+    //document.getElementById('cancelCss').addEventListener('click', () => { this._closeCSSModal(); });
+    document.getElementById('textInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter')  this._insertText();
+    if (e.key === 'Escape') { this.textPending = null; this._closeTextModal(); }
+    });
     }
 
     _updateStatus() {
         const l = this.activeLayer;
-        document.getElementById('statusLayer').textContent = l ? `Layer: ${l.name}` : 'Layer: —';
-        document.getElementById('statusRotate').textContent = this.rotateInterval
-            ? `Rotation: ${Math.round((this.activeLayer?.rotation || 0) * 180 / Math.PI)}°`
-            : '';
-        
-        // Add zoom level to status
-        document.getElementById('statusZoom').textContent = `Zoom: ${Math.round(this.zoomLevel * 100)}%`;
+    document.getElementById('statusLayer').textContent = l ? `Layer: ${l.name}` : 'Layer: —';
+    document.getElementById('statusRotate').textContent = this.rotateInterval
+    ? `Rotation: ${Math.round((this.activeLayer?.rotation || 0) * 180 / Math.PI)}°`
+    : '';
+
+    // Add zoom level to status
+    document.getElementById('statusZoom').textContent = `Zoom: ${Math.round(this.zoomLevel * 100)}%`;
     }
-    
+
     // NEW: Zoom methods
     setZoom(level) {
         this.zoomLevel = Math.max(0.1, Math.min(10, level));
@@ -1523,7 +1745,7 @@ class Editor {
         const r = this.mainCanvas.getBoundingClientRect();
         const x = (e.clientX - r.left) / this.zoomLevel;
         const y = (e.clientY - r.top) / this.zoomLevel;
-        return { x: Math.round(x), y: Math.round(y) };
+    return { x: Math.round(x), y: Math.round(y) };
     }
 
     // NEW: Undo functionality
@@ -1573,63 +1795,63 @@ class Editor {
 
     _mergeSelectedLayers() {
         if (this.layers.length <= 1) return;
-
+        
         // Ensure we have selected layers
         if (!this.selectedLayers || this.selectedLayers.length < 2) {
             alert('Please select 2 or more layers to merge (Ctrl+click to select)');
             return;
         }
-
+        
         this.saveState(true); // Force save state for undo
-
+        
         // Sort selected indices to maintain order
         const selectedIndices = [...this.selectedLayers].sort((a, b) => a - b);
         const firstIdx = selectedIndices[0];
-
+        
         // Create merged layer with same dimensions as canvas
         const mergedLayer = new Layer(this.mainCanvas.width, this.mainCanvas.height, 'Merged');
-
+        
         // Draw each selected layer onto the merged layer
         selectedIndices.forEach(idx => {
             const layer = this.layers[idx];
             if (!layer) return;
-
+            
             // Save merged layer context
             mergedLayer.ctx.save();
-
+            
             // Position and rotate the layer correctly
             mergedLayer.ctx.translate(layer.x + layer.canvas.width / 2,
-                                     layer.y + layer.canvas.height / 2);
+            layer.y + layer.canvas.height / 2);
             mergedLayer.ctx.rotate(layer.rotation);
             mergedLayer.ctx.drawImage(layer.canvas,
-                                     -layer.canvas.width / 2,
-                                     -layer.canvas.height / 2);
-
+            -layer.canvas.width / 2,
+            -layer.canvas.height / 2);
+            
             mergedLayer.ctx.restore();
         });
-
+        
         // Replace the selected layers with the merged layer
         this.layers = [
-            ...this.layers.slice(0, firstIdx),
-            mergedLayer,
-            ...this.layers.slice(firstIdx + selectedIndices.length)
+        ...this.layers.slice(0, firstIdx),
+        mergedLayer,
+        ...this.layers.slice(firstIdx + selectedIndices.length)
         ];
-
+        
         // Update active layer and clear selection
         this.activeIdx = firstIdx;
         this.selectedLayers = [];
         this._refreshLayersPanel();
         this._render();
-
-        console.log(`Merged ${selectedIndices.length} layers into one`);
+        
+    console.log(`Merged ${selectedIndices.length} layers into one`);
     }
 
-}
+    }
 
-document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
     try { window._editor = new Editor(); }
     catch(err) { console.error('Editor failed to start:', err); }
-});
-</script>
-</body>
-</html>
+    });
+    </script>
+    </body>
+    </html>
