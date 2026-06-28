@@ -204,12 +204,14 @@
             <option value="opacity">Opacity</option>
             <option value="saturate">Saturate</option>
             <option value="sepia">Sepia</option>
+            <option value="">+++++ fabrik filters +++++</option>
+            <option value="scrap">Sliced scraps</option>
             <!--
             <option value="innerglow">Inner glow</option>
             <option value="posterize">Posterize</option>
             <option value="emboss">Emboss</option>
             -->
-            <option value="">-----waves-----</option>
+            <option value="">+++++ waves +++++</option>
             <option value="waves">Sine waves</option>
             <option value="tangent">Tangent</option>
             <option value="cosine">Cosine</option>
@@ -998,6 +1000,9 @@ class Editor {
 					case 'sepia':
 						this._minimalEffect("sepia", layer);
                         break;
+            case 'scrap':
+            this._scrap(layer);
+            break;
             case 'waves':
             this._waves(layer, 'sin', 10, 0.05);
             break;      
@@ -1057,7 +1062,35 @@ class Editor {
         l.ctx.filter = 'none'; // Reset filter
         l.ctx.restore();
     }
-    
+
+    _scrap(l, amplitude = 10, frequency = 0.05) {
+        l.ctx.save();
+        const canvas = l.ctx.canvas;
+        const imageData = l.ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(imageData, 0, 0);
+        l.ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let y = 0; y < canvas.height; y++) {
+            let waveOffset;
+            waveOffset = Math.tan(y * frequency) * amplitude;
+            for (let x = 0; x < canvas.width; x++) {
+                const srcX = x + waveOffset;
+
+                if (srcX >= 0 && srcX < canvas.width) {
+                    l.ctx.drawImage(
+                        tempCanvas,
+                        srcX, y, 1, 1,
+                        x, y, 1, 1
+                    );
+                }
+            }
+        }
+        l.ctx.restore();
+    }
+  
     _waves(l, method = 'sin', amplitude = 10, frequency = 0.05, maxOffset = 50) {
         l.ctx.save();
         const canvas = l.ctx.canvas;
