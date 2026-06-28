@@ -22,7 +22,7 @@ Menu:
 - Eraser
 - Rotate layers (left mouse button to rotate)
 - Filesize
-- Various effects
+- Various effects/filters
 - Custom Fabrik Filters (folded paper, fine grain, rice paper, etc.)
 
 Right menu:
