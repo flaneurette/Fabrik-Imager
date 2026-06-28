@@ -22,6 +22,7 @@ Menu:
 - Eraser
 - Rotate layers (left mouse button to rotate)
 - Filesize
+- Various effects
 
 Right menu:
 
