@@ -1,10 +1,5 @@
 # Fabrik Imager
 
-```
-F /\ B R I K 
-IMAGER
-```
-
 <img src="selection_1782617755736.png" />
 
 A minimalist photo editor to edit and create PNG images. Not the same as Gimp, Photoshop, Photopea, Canva or Paint, but rather unique as it has limited, but creative! functions, and is tailored to PNG files only. 
