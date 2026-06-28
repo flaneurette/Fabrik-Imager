@@ -15,7 +15,7 @@ Has the most used functions, for simplicity:
 
 Menu:
 
-- Open/save PNG files. (also: save a selected layer)
+- Open/save PNG files. (also: save a selection)
 - Drag/Pointer
 - Resize a layer
 - Rectangle
