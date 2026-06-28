@@ -207,6 +207,7 @@
             <option value="">+++++ fabrik filters +++++</option>
             <option value="scrap">Folded scrap paper</option>
             <option value="finegrain">Fine grain paper</option>
+            <option value="ricepaper">Fine rice paper</option>
             <!--
             <option value="innerglow">Inner glow</option>
             <option value="posterize">Posterize</option>
@@ -1007,6 +1008,9 @@ class Editor {
             case 'finegrain':
             this._paper('finegrain',layer);
             break;
+            case 'ricepaper':
+            this._paper('ricepaper',layer);
+            break;
             case 'waves':
             this._waves(layer, 'sin', 10, 0.05);
             break;      
@@ -1089,6 +1093,15 @@ class Editor {
                             tempCanvas,
                             srcX, Math.random() + y, 1, 1,
                             x, Math.random() + y, 1, 1
+                        );
+                    }
+                } else if(method == 'ricepaper') {
+                const srcX = x;
+                    if (srcX >= 0 && srcX < canvas.width) {
+                        l.ctx.drawImage(
+                            tempCanvas,
+                            srcX, Math.random() + y, 1, 1,
+                            x, Math.random() + y + (y * 2), 1, 1
                         );
                     }
                 } else {
