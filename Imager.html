@@ -157,6 +157,7 @@
 
     <!-- TOOLBAR -->
     <div class="toolbar">
+        <div>F /\ B R I K.</div>
         <button class="tb-btn" id="btnOpen"  title="Open PNG (Ctrl+O)">Open</button>
         <button class="tb-btn" id="btnSave"  title="Save PNG (Ctrl+S)">Save as PNG</button>
         <button class="tb-btn" id="btnSaveSel">Save selection</button>
@@ -179,8 +180,8 @@
         <button class="tb-btn" id="btnZoomIn"  title="Zoom In (+)">+</button>
         <button class="tb-btn" id="btnZoomOut" title="Zoom Out (-)">-</button>
         <div class="toolbar-sep"></div>
-        <input type="number" id="resizePercent" class="quality-slider" min="1" max="1000" value="100" size="3" title="Resize layer percentage">
-        <button class="tb-btn" id="btnResizeLayer" title="Resize active layer">% Resize layer</button>
+        <small>Layer Size:</small><input type="number" id="resizePercent" class="quality-slider" min="1" max="1000" value="100" size="3" title="Resize layer percentage">%
+        <button class="tb-btn" id="btnResizeLayer" title="Resize active layer">Resize layer</button>
     </div>
 
     <!-- MIDDLE -->
@@ -188,7 +189,7 @@
 
         <!-- WORK AREA -->
         <div class="workarea-column">
-            <div class="workarea-bar">
+            <div class="workarea-bar" style="margin-left:15px;">
                 <span>Canvas size:</span>
                 <input type="number" id="inputW" value="1200" min="1" max="8000">
                 <span>×</span>
