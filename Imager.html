@@ -1041,14 +1041,14 @@ class Editor {
 
     // EFFECTS ---------------------------------------------------------
                         
-    _minimalEffect(method, l, param = 90) {
+    _minimalEffect(method, l, param = 180) {
         l.ctx.save();
         switch(method) {
             case 'contrast':
             l.ctx.filter = `contrast(1.5)`;
             break;
-            case 'greyscale':
-            l.ctx.filter = `grayscale(0.5)`;
+            case 'grayscale':
+            l.ctx.filter = `grayscale(100)`;
             break;        
             case 'hue':
             l.ctx.filter = `hue-rotate(${param})`;
