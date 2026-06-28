@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FaImager</title>
+    <title>F/\brik Imager</title>
     <style>
     
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
@@ -126,6 +126,7 @@
         .layers-panel-footer button:hover { background: #666; }
 
         /* MODAL */
+
         .modal-overlay {
             display: none; position: fixed; inset: 0;
             background: rgba(0,0,0,0.55); z-index: 999;
@@ -167,7 +168,7 @@
     <div class="toolbar">
         <div>F /\ B R I K.</div>
         <button class="tb-btn" id="btnOpen"  title="Open PNG (Ctrl+O)">Open</button>
-        <button class="tb-btn" id="btnSave"  title="Save PNG (Ctrl+S)">Save as PNG</button>
+        <button class="tb-btn" id="btnSave"  title="Save PNG (Ctrl+S)">Save</button>
         <button class="tb-btn" id="btnSaveSel">Save selection</button>
         
         <div class="toolbar-sep"></div>
@@ -190,7 +191,34 @@
         <div class="toolbar-sep"></div>
         <small>Layer Size:</small><input type="number" id="resizePercent" class="quality-slider" min="1" max="1000" value="100" size="3" title="Resize layer percentage">%
         <button class="tb-btn" id="btnResizeLayer" title="Resize active layer">Resize layer</button>
+        <select class="tb-btn" id="effects"  title="Effects">
+            <option value="">Choose effect</option>
+            <option value="blur">Blur</option>
+            <option value="dropshadow">Drop shadow</option>
+            <option value="brightness">Brightness</option>
+            <option value="noise">Noise</option>
+            <option value="contrast">Contrast</option>
+            <option value="grayscale">Grayscale</option>
+            <option value="hue">Hue</option>
+            <option value="invert">Invert</option>
+            <option value="opacity">Opacity</option>
+            <option value="saturate">Saturate</option>
+            <option value="sepia">Sepia</option>
+            <!--
+            <option value="innerglow">Inner glow</option>
+            <option value="posterize">Posterize</option>
+            <option value="emboss">Emboss</option>
+            -->
+            <option value="">-----waves-----</option>
+            <option value="waves">Sine waves</option>
+            <option value="tangent">Tangent</option>
+            <option value="cosine">Cosine</option>
+            <option value="square">Square</option>
+            <option value="sawtooth">Sawtooth</option>
+        </select> 
+        <!-- <button class="tb-btn" id="btnEffectsEditor" title="Open effect editor">Effect editor</button> -->
     </div>
+
 
     <!-- MIDDLE -->
     <div class="middle-row">
@@ -293,6 +321,17 @@
             <button class="btn-ok"     id="btnTextOk">Insert</button>
         </div>
     </div>
+</div>
+
+<div id="effectEditorWindow" class="modal-overlay">
+  <div class="modal-box">
+    <h3>CSS Effects Editor</h3>
+    <textarea id="cssInput" class="modal-box" style="outline:none;"  rows="15" cols="40" placeholder="Enter CSS rules (e.g., filter: blur(5px);)"></textarea>
+    <div class="modal-row">
+      <button id="applyCss" class="btn-ok">Apply</button>
+      <button id="cancelCss" class="btn-cancel">Close</button>
+    </div>
+  </div>
 </div>
 
 <!-- 
@@ -908,10 +947,214 @@ class Editor {
         document.getElementById('textInput').value = '';
         document.getElementById('textInput').focus();
     }
+    
+    _openCSSEditor() {
+        document.getElementById('effectEditorWindow').classList.add('open');
+    }
+    
+    _closeCSSModal() {
+        document.getElementById('effectEditorWindow').classList.remove('open');
+    }
+
     _closeTextModal() {
         document.getElementById('textModal').classList.remove('open');
     }
     
+    _effects() {
+        this.saveState();
+        const effect = document.getElementById('effects').value.trim();
+        const layer = this.activeLayer;
+        switch(effect) {
+            case 'blur':
+            this._blur(layer,5);
+            break;  
+            case 'dropshadow':
+            this._dropshadow(layer, 5);
+            break;
+            case 'brightness':
+            this._brightness(layer, 5);
+            break; 
+            case 'noise':
+            this._noise(layer, 5);
+            break;
+					case 'contrast':
+						this._minimalEffect("contrast", layer);
+						break;
+					case 'grayscale':
+						this._minimalEffect("grayscale", layer);
+						break;
+					case 'hue':
+						this._minimalEffect("hue", layer);
+						break;
+					case 'invert':
+						this._minimalEffect("invert", layer);
+						break;
+					case 'opacity':
+						this._minimalEffect("opacity", layer);
+						break;
+					case 'saturate':
+						this._minimalEffect("saturate", layer);
+						break;
+					case 'sepia':
+						this._minimalEffect("sepia", layer);
+                        break;
+            case 'waves':
+            this._waves(layer, 'sin', 10, 0.05);
+            break;      
+            case 'sine':
+            // Gentle sine wave (default)
+            this._waves(layer, 'sin', 15, 0.04);
+            break;
+            case 'tangent':
+            // More dramatic tangent (now controlled)
+            this._waves(layer, 'tan', 25, 0.03);
+            break;
+            case 'cosine':
+            // Cosine wave (smoother)
+            this._waves(layer, 'cos', 20, 0.05);
+            break;
+            case 'square':
+            // Square wave (blocky)
+            this._waves(layer, 'square', 30, 0.02);
+            break;
+            case 'sawtooth':
+            // Sawtooth wave (triangular)
+            this._waves(layer, 'sawtooth', 25, 0.03);
+            break;            
+        }
+        
+        this._render();
+    }
+
+    // EFFECTS ---------------------------------------------------------
+                        
+    _minimalEffect(method, l, param = 5) {
+        l.ctx.save();
+        switch(method) {
+            case 'contrast':
+            l.ctx.filter = `contrast(50%)`;
+            break;
+            case 'greyscale':
+            l.ctx.filter = `grayscale(50%)`;
+            break;        
+            case 'hue':
+            l.ctx.filter = `hue-rotate(${param}deg)`;
+            break;
+            case 'invert':
+            l.ctx.filter = `invert(50%)`;
+            break;
+            case 'opacity':
+            l.ctx.filter = `opacity(20%)`;
+            break;
+            case 'saturate':
+            l.ctx.filter = `saturate(70)`;
+            break;
+            case 'sepia':
+            l.ctx.filter = `sepia(50)`;
+            break;
+        }
+        l.ctx.drawImage(l.canvas, 0, 0);
+        l.ctx.filter = 'none'; // Reset filter
+        l.ctx.restore();
+    }
+    
+    _waves(l, method = 'sin', amplitude = 10, frequency = 0.05, maxOffset = 50) {
+        l.ctx.save();
+        const canvas = l.ctx.canvas;
+        const imageData = l.ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(imageData, 0, 0);
+
+        l.ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let y = 0; y < canvas.height; y++) {
+            let waveOffset;
+            switch(method) {
+                case 'tan':
+                    waveOffset = Math.tan(y * frequency) * amplitude;
+                    // Clamp extreme values
+                    waveOffset = Math.min(Math.max(waveOffset, -maxOffset), maxOffset);
+                    break;
+                case 'cos':
+                    waveOffset = Math.cos(y * frequency) * amplitude;
+                    break;
+                case 'square':
+                    waveOffset = (Math.sin(y * frequency * 2) > 0 ? 1 : -1) * amplitude;
+                    break;
+                case 'sawtooth':
+                    waveOffset = (y * frequency % 1) * amplitude * 2 - amplitude;
+                    break;
+                default: // 'sin'
+                    waveOffset = Math.sin(y * frequency) * amplitude;
+            }
+
+            for (let x = 0; x < canvas.width; x++) {
+                const srcX = x + waveOffset;
+                if (srcX >= 0 && srcX < canvas.width) {
+                    l.ctx.drawImage(tempCanvas, srcX, y, 1, 1, x, y, 1, 1);
+                }
+            }
+        }
+
+        l.ctx.restore();
+    }
+
+    _noise(l, intensity = 0.1) {
+        l.ctx.save(); // Save current state
+        const imageData = l.ctx.getImageData(0, 0, l.ctx.canvas.width, l.ctx.canvas.height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i++) {
+            // Apply noise to each channel (R, G, B, A)
+            data[i] += (Math.random() - 0.5) * 255 * intensity;
+            // Clamp values between 0-255
+            data[i] = Math.max(0, Math.min(255, data[i]));
+        }
+
+        l.ctx.putImageData(imageData, 0, 0);
+        l.ctx.restore(); // Restore to original state
+    }
+
+    _brightness(l, value = 10) {
+    l.ctx.save();
+    const imageData = l.ctx.getImageData(0, 0, l.ctx.canvas.width, l.ctx.canvas.height);
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        imageData.data[i] += value;     // Red
+        imageData.data[i+1] += value;   // Green
+        imageData.data[i+2] += value;   // Blue
+      }
+        l.ctx.putImageData(imageData, 0, 0);
+        l.ctx.restore(); // Restore to original state
+    }
+    
+    _blur(l, radius = 5) {
+        l.ctx.save();
+        l.ctx.filter = `blur(${radius}px)`;
+        l.ctx.drawImage(l.canvas, 0, 0);
+        l.ctx.filter = 'none'; // Reset filter
+        l.ctx.restore();
+    }
+
+    _dropshadow(l, radius = 5) {
+        // Save the current context state
+        l.ctx.save();
+
+        // Set shadow properties
+        l.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        l.ctx.shadowBlur = radius;
+        l.ctx.shadowOffsetX = radius;
+        l.ctx.shadowOffsetY = radius;
+
+        // Draw the layer's content (which will cast the shadow)
+        l.ctx.drawImage(l.canvas, 0, 0);
+
+        // Restore the context to remove the shadow
+        l.ctx.restore();
+    }
+
     _insertText() {
     
         this.saveState();
@@ -987,6 +1230,21 @@ class Editor {
 
         this._render();
         this._refreshLayersPanel();
+    }
+
+    _applyCSS() {
+        this.saveState();
+        const csscode = document.getElementById('cssInput').value.trim();
+
+        if (!csscode) {
+            alert('Please enter CSS rules first');
+            return;
+        }
+
+        const layer = this.activeLayer;
+        const canvas = layer.ctx.canvas;
+        canvas.style.cssText = csscode;
+        this._render();
     }
 
     _openFile() {
@@ -1091,6 +1349,10 @@ class Editor {
         document.getElementById('btnSaveSel').addEventListener('click', () => {
             this._saveSelectionAsImage();
         });
+        
+        document.getElementById('effects').addEventListener('change', () => {
+            this._effects();
+        });    
     }
 
     _bindKeys() {
@@ -1151,7 +1413,10 @@ class Editor {
         document.getElementById('btnDelLayer').addEventListener('click', () => this._deleteLayer(this.activeIdx));
 
         document.getElementById('btnTextOk').addEventListener('click',    () => this._insertText());
+        document.getElementById('applyCss').addEventListener('click',    () => this._applyCSS());
+        document.getElementById('btnEffectsEditor').addEventListener('click',    () => this._openCSSEditor());
         document.getElementById('btnTextCancel').addEventListener('click', () => { this.textPending = null; this._closeTextModal(); });
+        document.getElementById('cancelCss').addEventListener('click', () => { this._closeCSSModal(); });
         document.getElementById('textInput').addEventListener('keydown', e => {
             if (e.key === 'Enter')  this._insertText();
             if (e.key === 'Escape') { this.textPending = null; this._closeTextModal(); }
