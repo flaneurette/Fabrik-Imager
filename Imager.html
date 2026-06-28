@@ -1199,11 +1199,11 @@ class Editor {
         l.ctx.restore(); // Restore to original state
     }
     
-    _blur(l, radius = 5) {
+    _blur(l, radius = 25) {
         l.ctx.save();
         l.ctx.filter = `blur(${radius}px)`;
         l.ctx.drawImage(l.canvas, 0, 0);
-        l.ctx.filter = 'none'; // Reset filter
+        //l.ctx.filter = 'none'; // Reset filter
         l.ctx.restore();
     }
 

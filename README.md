@@ -23,7 +23,7 @@ Menu:
 - Rotate layers (left mouse button to rotate)
 - Filesize
 - Various effects
-- Custom Fabrik Filters (folded paper, fine grain)
+- Custom Fabrik Filters (folded paper, fine grain, rice paper, etc.)
 
 Right menu:
 
