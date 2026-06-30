@@ -42,4 +42,4 @@ Most popular shortcuts: `ctrl+e` to merge layers, `ctrl+c` to copy layer, `ctrl+
 
 TIP: Use `middle mouse button` to drag layers, or items around
 
-TIP: Many filters require a good hardware. i.e. a fast CPU and GPU. At best some filters take 3-10 seconds to be applied.
+TIP: Many filters require good hardware. i.e. a fast CPU and GPU. At best some filters take 3-10 seconds to be applied.
