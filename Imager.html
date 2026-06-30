@@ -1124,6 +1124,7 @@
         let norm = l.rotation % (Math.PI * 2);
         if (norm < 0) norm += Math.PI * 2;
 
+        // snap angles into place.
         const snapThreshold = 0.045;
         const snapAngles = [0, Math.PI/2, Math.PI, Math.PI*1.5, Math.PI*2];
 
