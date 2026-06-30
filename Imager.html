@@ -61,7 +61,7 @@
         border: none; border-radius: 4px; cursor: pointer; font-size: 12px;
     }
     .tb-btn:hover { background: #444; }
-
+    
     /* MIDDLE */
     .middle-row { display: flex; flex: 1; overflow: hidden; }
 
@@ -177,7 +177,9 @@
         background-color:#fff;
         color:#000;
     }
-
+    small {
+        color:#666;
+    }
     </style>
     </head>
     <body>
@@ -189,10 +191,6 @@
     <button class="tb-btn" id="btnOpen"  title="Open PNG (Ctrl+O)">Open</button>
     <button class="tb-btn" id="btnSave"  title="Save PNG (Ctrl+S)">Save</button>
     <button class="tb-btn" id="btnSaveSel">Save selection</button>
-
-    <div class="toolbar-sep"></div>
-    <label title="PNG quality"><input type="number" size="4" id="qualitySlider" class="quality-slider" min="1" max="100" value="100">
-    </label>
     <div class="toolbar-sep"></div>
     <div class="tool-btn active" data-tool="pointer" title="Pointer (V) to drag...">✥</div>
     <div class="tool-btn" data-tool="select"       title="Rect Select (S)">⬚</div>
@@ -351,15 +349,78 @@
     </div>
 
     <div id="effectEditorWindow" class="modal-overlay">
-    <div class="modal-box">
-    <h3>CSS Effects Editor</h3>
-    <textarea id="cssInput" class="modal-box" style="outline:none;"  rows="15" cols="40" placeholder="Enter CSS rules (e.g., filter: blur(5px);)"></textarea>
-    <div class="modal-row">
-    <button id="applyCss" class="btn-ok">Apply</button>
-    <button id="cancelCss" class="btn-cancel">Close</button>
+        <div class="modal-box">
+        <h3>CSS Effects Editor</h3>
+        <textarea id="cssInput" class="modal-box" style="outline:none;"  rows="15" cols="40" placeholder="Enter CSS rules (e.g., filter: blur(5px);)"></textarea>
+        <div class="modal-row">
+            <button id="applyCss" class="btn-ok">Apply</button>
+            <button id="cancelCss" class="btn-cancel">Close</button>
+            </div>
+        </div>
     </div>
+
+    <div id="saveModal" class="modal-overlay">
+        <div class="modal-box">
+        <h3>Save image...</h3>
+         <div class="modal-row">
+        <label title="Image type" style="display: inline-block;">Image type: </label>
+        <select style="display: inline-block;width:90px;" class="tb-btn" id="imageType">
+            <option value="png">PNG</option>
+            <option value="jpeg">JPEG</option>
+            <option value="gif">GIF</option>
+            <option value="avif">AVIF</option>
+        </select>
+        </div>
+        
+        <div class="modal-row">
+        <label title="Quality" style="display: inline-block;">Quality: </label> 
+            <select style="display: inline-block;width:90px;" class="tb-btn" id="qualitySlider">
+            <option value="100">100%</option>
+            <option value="80">80%</option>
+            <option value="75">75%</option>
+            <option value="50">50%</option>
+            <option value="30">30%</option>
+            <option value="20">20%</option>
+        </select>
+        </div>
+        
+        <div class="modal-row">
+            <button id="saveImage" style="margin-top: 50px;" class="btn-ok">Save image</button>
+            <small>NOTE: Firefox might not support non-png images</small>
+        </div>
     </div>
+</div>
+    <div id="saveSelectionModal" class="modal-overlay">
+        <div class="modal-box">
+        <h3>Save selection...</h3>
+         <div class="modal-row">
+        <label title="Image type" style="display: inline-block;">Image type: </label>
+        <select style="display: inline-block;width:90px;" class="tb-btn" id="imageTypeSelection">
+            <option value="png">PNG</option>
+            <option value="jpeg">JPEG</option>
+            <option value="gif">GIF</option>
+            <option value="avif">AVIF</option>
+        </select>
+        </div>
+        
+        <div class="modal-row">
+        <label title="Quality" style="display: inline-block;">Quality: </label> 
+            <select style="display: inline-block;width:90px;" class="tb-btn" id="qualitySliderSelection">
+            <option value="100">100%</option>
+            <option value="80">80%</option>
+            <option value="75">75%</option>
+            <option value="50">50%</option>
+            <option value="30">30%</option>
+            <option value="20">20%</option>
+        </select>
+        </div>
+        
+        <div class="modal-row">
+            <button id="saveImageSelection" style="margin-top: 50px;" class="btn-ok">Save image</button>
+            <small>NOTE: Firefox might not support non-png images</small>
+        </div>
     </div>
+
 
     <!--
     <div id="resulting" style="background-color:#333;margin:10px;padding:10px;color:#888;z-index:9999;border:1px dashed #888;position:absolute;right: 300px;top: 100px;width:500px;height:500px;">
@@ -900,36 +961,45 @@
             alert('No rectangular area selected!');
             return;
         }
-        
+
+        let quality = parseFloat(document.getElementById('qualitySliderSelection').value) / 100;
+        let imageType = document.getElementById('imageTypeSelection').value;
+
         const l = this.activeLayer;
         if (!l) return;
-        
+
         const canvas = document.createElement('canvas');
         canvas.width = this.sel.w;
         canvas.height = this.sel.h;
         const ctx = canvas.getContext('2d');
-        
-        // Draw only the selected portion
+
         ctx.drawImage(
-        l.canvas,
-        this.sel.x - l.x, this.sel.y - l.y,  // source position
-        this.sel.w, this.sel.h,               // source size
-        0, 0,                                 // destination position
-        this.sel.w, this.sel.h                // destination size
+            l.canvas,
+            this.sel.x - l.x, this.sel.y - l.y,
+            this.sel.w, this.sel.h,
+            0, 0,
+            this.sel.w, this.sel.h
         );
-        
-        // Use the temporary canvas instead of this.canvas
-        const data = canvas.toDataURL('image/png');
-        const blob = this.dataURLtoBlob(data);
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-    link.download = `selection_${Date.now()}.png`;
-    link.href = url;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+
+        canvas.toBlob((blob) => {
+            if (!blob) {
+                alert(`Format "${imageType}" may not be supported by your browser.`);
+                return;
+            }
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `selection_${Date.now()}.${imageType}`;
+            link.href = url;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            this._closeSaveSelectionModal();
+
+        }, `image/${imageType}`, quality);
     }
+
 
     _pasteClipboard() {
         this.saveState();
@@ -1190,6 +1260,22 @@
         document.getElementById('textInput').focus();
     }
 
+    _saveModal() {
+        document.getElementById('saveModal').classList.add('open');
+    }
+
+    _saveSelectionModal() {
+        document.getElementById('saveSelectionModal').classList.add('open');
+    }
+
+    _closeSaveModal() {
+        document.getElementById('saveModal').classList.remove('open');
+    }
+
+    _closeSaveSelectionModal() {
+        document.getElementById('saveSelectionModal').classList.remove('open');
+    }
+    
     _openCSSEditor() {
         document.getElementById('effectEditorWindow').classList.add('open');
     }
@@ -1617,21 +1703,27 @@
     }
 
     _saveFile() {
-        try {
-            const data = this.mainCanvas.toDataURL('image/png');
-            // Download
-            const blob = this.dataURLtoBlob(data);
+
+        let quality = parseFloat(document.getElementById('qualitySlider').value) / 100;
+        let imageType = document.getElementById('imageType').value;
+
+        this.mainCanvas.toBlob((blob) => {
+            if (!blob) {
+                alert(`Format "${imageType}" may not be supported by your browser.`);
+                return;
+            }
+
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.download = `image_${Date.now()}.png`;
+            link.download = `image_${Date.now()}.${imageType}`;
             link.href = url;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-        } catch(e) {
-            document.write(e.message);
-        }
+            this._closeSaveModal();
+        }, `image/${imageType}`, quality);
+
     }
 
     dataURLtoBlob(dataURL) {
@@ -1690,9 +1782,13 @@
     });
 
     document.getElementById('btnSaveSel').addEventListener('click', () => {
-        this._saveSelectionAsImage();
+        this._saveSelectionModal();
     });
 
+    document.getElementById('btnSave').addEventListener('click', () => {
+        this._saveModal();
+    });
+    
     document.getElementById('effects').addEventListener('change', () => {
         this._effects();
     });
@@ -1740,7 +1836,6 @@
 
     _bindUI() {
         document.getElementById('btnOpen').addEventListener('click', () => this._openFile());
-        document.getElementById('btnSave').addEventListener('click', () => this._saveFile());
         
         document.getElementById('btnResize').addEventListener('click', () => {
             const w = parseInt(document.getElementById('inputW').value);
@@ -1757,10 +1852,19 @@
         
         document.getElementById('btnTextOk').addEventListener('click',    () => this._insertText());
         document.getElementById('applyCss').addEventListener('click',    () => this._applyCSS());
+        
+        document.getElementById('saveImage').addEventListener('click', () => {
+            this._saveFile();
+        });
+
+        document.getElementById('saveImageSelection').addEventListener('click', () => {
+            this._saveSelectionAsImage();
+        });
+
         //document.getElementById('btnEffectsEditor').addEventListener('click',    () => this._openCSSEditor());
-    document.getElementById('btnTextCancel').addEventListener('click', () => { this.textPending = null; this._closeTextModal(); });
-    //document.getElementById('cancelCss').addEventListener('click', () => { this._closeCSSModal(); });
-    document.getElementById('textInput').addEventListener('keydown', e => {
+        document.getElementById('btnTextCancel').addEventListener('click', () => { this.textPending = null; this._closeTextModal(); });
+        //document.getElementById('cancelCss').addEventListener('click', () => { this._closeCSSModal(); });
+        document.getElementById('textInput').addEventListener('keydown', e => {
         if (e.key === 'Enter')  this._insertText();
     if (e.key === 'Escape') { this.textPending = null; this._closeTextModal(); }
     });
