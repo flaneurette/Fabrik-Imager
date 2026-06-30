@@ -509,7 +509,9 @@
         this.rotateInterval = null;
         
         this.textPending = null;
-        
+        this.lastX = null;
+        this.lastY = null; 
+        this.speed = 0.001;
         this._init();
     }
 
@@ -613,9 +615,10 @@
         list.innerHTML = '';
         
         this.layers.forEach((layer, idx) => {
-            const item = document.createElement('div');
-            item.className = 'layer-item';
-    item.title = `Layer: ${layer.name}\nPosition: (${layer.x}, ${layer.y})`;
+        const item = document.createElement('div');
+        item.className = 'layer-item';
+        item.title = `Layer: ${layer.name}\nPosition: (${layer.x}, ${layer.y})`;
+        item.id = idx;
 
     if (idx === this.activeIdx) {
         item.classList.add('active');
@@ -675,11 +678,13 @@
     }
 
     _bindLayerEvents() {
+    
         const list = document.getElementById('layersList');
         let dragIdx = -1;
         let startY = 0;
         
         list.addEventListener('mousedown', e => {
+        
             if (e.target.classList.contains('layer-item')) {
                 const idx = Array.from(list.children).indexOf(e.target);
                 if (idx !== -1) {
@@ -691,6 +696,7 @@
         });
         
         list.addEventListener('mousemove', e => {
+        
             if (dragIdx !== -1) {
                 const dy = e.clientY - startY;
                 if (Math.abs(dy) > 5) {
@@ -700,6 +706,7 @@
     });
 
     list.addEventListener('mouseup', e => {
+    
         if (dragIdx !== -1) {
             const endY = e.clientY;
             const dy = endY - startY;
@@ -1064,21 +1071,72 @@
             this._refreshLayersPanel();
             this._render();
         }
-        
-        _startContinuousRotate() {
+       
+        _startContinuousRotate(direction='left', delta=0.1) {
+
+            let lastX = null;
+            let lastY = null;
+            
+            // store reference so you can remove it
+            this._mouseMoveHandler = (e) => {
+                if (lastX !== null) {
+                    const dx = e.clientX - lastX;
+                    const dy = e.clientY - lastY;
+                    this.speed = parseFloat((Math.sqrt(dx * dx + dy * dy) / 1000).toFixed(4));
+                }
+                lastX = e.clientX;
+                lastY = e.clientY;
+            };
+
+            this.mainCanvas.addEventListener('mousemove', this._mouseMoveHandler);
+  
             this._stopContinuousRotate();
             this.rotateInterval = setInterval(() => {
                 const l = this.activeLayer; if (!l) return;
-                l.rotation += 0.02; // ~1.1 deg per frame
-                document.getElementById('statusRotate').textContent =
-            `Rotation: ${Math.round(l.rotation * 180 / Math.PI)}°`;
+                this.speed = Math.max(this.speed * 0.99, 0.0122);
+
+                if(direction == 'right') {
+                l.rotation -= 0.0022 + this.speed;
+                } else {
+                l.rotation += 0.0022 + this.speed;
+                }
+                
+                document.getElementById('statusRotate').textContent = `Rotation: ${Math.round(l.rotation * 180 / Math.PI)}°`;
             this._render();
         }, 16);
     }
+    
     _stopContinuousRotate() {
-        
-    if (this.rotateInterval) { 
-        clearInterval(this.rotateInterval); this.rotateInterval = null; }
+
+        if (this._mouseMoveHandler) {
+            this.mainCanvas.removeEventListener('mousemove', this._mouseMoveHandler);
+            this._mouseMoveHandler = null;
+        }
+
+        if (this.rotateInterval) { 
+            clearInterval(this.rotateInterval); 
+            this.rotateInterval = null;
+        }
+        this.rotateActive = false;
+
+        const l = this.activeLayer; if (!l) return;
+
+        // normalize to 0 - 2PI
+        let norm = l.rotation % (Math.PI * 2);
+        if (norm < 0) norm += Math.PI * 2;
+
+        const snapThreshold = 0.045;
+        const snapAngles = [0, Math.PI/2, Math.PI, Math.PI*1.5, Math.PI*2];
+
+        for (const angle of snapAngles) {
+            if (Math.abs(norm - angle) < snapThreshold) {
+                l.rotation = angle;
+                break;
+            }
+        }
+
+        this.saveState();
+        this._render();
     }
 
     _canvasXY(e) {
@@ -1231,8 +1289,21 @@
         if (this.tool === 'pencil' || this.tool === 'eraser') {
             this._stopDrawing();
         }
+
+        if (this.tool === 'rotate') {
+            this._stopContinuousRotate();
+        }
+        
     });
 
+    cv.addEventListener('mousedown', e => {
+        if(e.button === 2) {
+            if (this.tool === 'rotate') {
+                this._startContinuousRotate('right');
+            }
+        }
+    });
+    
     cv.addEventListener('mouseleave', () => {
         if (this.dragLayer) {
             this.dragLayer = null;
@@ -1247,10 +1318,11 @@
         if (this.tool === 'pencil' || this.tool === 'eraser') {
             this._stopDrawing();
         }
+        if (this.tool === 'rotate') {
+         this._stopContinuousRotate();
+        }
     });
-
-    }
-
+}
     _erase(x, y) {
         this.saveState();
         const l = this.activeLayer; if (!l) return;
@@ -1896,7 +1968,22 @@
     }
 
     _bindKeys() {
+
+        // Mouse event handler should be outside the keyboard event check
+        document.getElementById('layersList').addEventListener('mousedown', (e) => {
+            if (e.ctrlKey && e.button === 0) { // Left mouse button
+                if (e.target.classList.contains('layer-item')) {
+                    const idx = Array.from(e.currentTarget.children).indexOf(e.target);
+                    if (idx !== -1) {
+                        e.target.style.backgroundColor = 'purple';
+                        this.selectedLayers.push(idx);
+                    }
+                }
+            }
+        });
+              
         document.addEventListener('keydown', e => {
+        
             if (document.getElementById('textModal').classList.contains('open')) return;
             
             if (e.ctrlKey) {
@@ -1914,10 +2001,11 @@
                 document.querySelector('[data-tool="select"]').click();
                 this._render();
                 break;
+ 
             }
             return;
         }
-        
+          
         switch(e.key.toLowerCase()) {
             case 'v': document.querySelector('[data-tool="pointer"]').click();      break;
             case 's': document.querySelector('[data-tool="select"]').click();       break;
