@@ -229,6 +229,7 @@
     <option value="confetti">Art: Confetti small</option>
     <option value="confetti2">Art: Confetti Large</option>
     <option value="laminate">Art: Laminate</option>
+    <option value="brushed">Art: Brushed (metal/rain)</option>
     <!--
     <option value="innerglow">Inner glow</option>
     <option value="posterize">Posterize</option>
@@ -1347,6 +1348,9 @@
             case 'laminate':
             this._paper('laminate',layer);
             break;
+            case 'brushed':
+            this._paper('brushed',layer);
+            break;
             case 'waves':
             this._waves(layer, 'sin', 10, 0.05);
             break;
@@ -1417,21 +1421,27 @@
         const tempCtx = tempCanvas.getContext('2d');
         tempCtx.putImageData(imageData, 0, 0);
         l.ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (let y = 0; y < canvas.height; y++) {
-            let waveOffset;
-            waveOffset = Math.tan(y * frequency) * (Math.random() * amplitude );
-            for (let x = 0; x < canvas.width; x++) {
                 
                 if(method == 'finegrain') {
-                    const srcX = x;
-                    if (srcX >= 0 && srcX < canvas.width) {
-                        l.ctx.drawImage(
-                        tempCanvas,
-                        srcX, Math.random() + y, 1, 1,
-                        x, Math.random() + y, 1, 1
-                        );
-                    }
+                        for (let y = 0; y < canvas.height; y++) {
+                            let waveOffset;
+                            waveOffset = Math.tan(y * frequency) * (Math.random() * amplitude );
+                            for (let x = 0; x < canvas.width; x++) {
+                        const srcX = x;
+                        if (srcX >= 0 && srcX < canvas.width) {
+                            l.ctx.drawImage(
+                            tempCanvas,
+                            srcX, Math.random() + y, 1, 1,
+                            x, Math.random() + y, 1, 1
+                            );
+                          }
+                         }
+                        }
                     } else if(method == 'ricepaper') {
+                        for (let y = 0; y < canvas.height; y++) {
+                            let waveOffset;
+                            waveOffset = Math.tan(y * frequency) * (Math.random() * amplitude );
+                            for (let x = 0; x < canvas.width; x++) {
                         const srcX = x;
                         if (srcX >= 0 && srcX < canvas.width) {
                             l.ctx.drawImage(
@@ -1439,8 +1449,14 @@
                             srcX, Math.random() + y, 1, 1,
                             x, Math.random() + y + (y * 2), 1, 1
                             );
-                        }
+                      }
+                     }
+                    }
                     } else if(method == 'lines') {
+                        for (let y = 0; y < canvas.height; y++) {
+                            let waveOffset;
+                            waveOffset = Math.tan(y * frequency) * (Math.random() * amplitude );
+                            for (let x = 0; x < canvas.width; x++) {
                         const srcX = x;
                         if (srcX >= 0 && srcX < canvas.width) {
                             l.ctx.drawImage(
@@ -1448,8 +1464,14 @@
                             srcX, x, 1, 1,
                             x, Math.random() + y + (y * y), 10, 1
                             );
-                        }
+                      }
+                     }
+                    }
                     } else if(method == 'confetti') {
+                        for (let y = 0; y < canvas.height; y++) {
+                            let waveOffset;
+                            waveOffset = Math.tan(y * frequency) * (Math.random() * amplitude );
+                            for (let x = 0; x < canvas.width; x++) {
                         const srcX = x;
                         if (srcX >= 0 && srcX < canvas.height) {
                             l.ctx.drawImage(
@@ -1457,8 +1479,14 @@
                             Math.random() * y, Math.random() * x, 5,5,
                             Math.random() * x, Math.random() * y, 5,5
                             );
-                        }
+                      }
+                     }
+                    }
                     } else if(method == 'confetti2') {
+                        for (let y = 0; y < canvas.height; y++) {
+                            let waveOffset;
+                            waveOffset = Math.tan(y * frequency) * (Math.random() * amplitude );
+                            for (let x = 0; x < canvas.width; x++) {
                         const srcX = x;
                         if (srcX >= 0 && srcX < canvas.height) {
                             l.ctx.drawImage(
@@ -1466,8 +1494,14 @@
                             Math.random() * y, Math.random() * x, 25,25,
                             Math.random() * x, Math.random() * y, 25,25
                             );
-                        }
+                      }
+                     }
+                    }
                     } else if(method == 'laminate') {
+                        for (let y = 0; y < canvas.height; y++) {
+                            let waveOffset;
+                            waveOffset = Math.tan(y * frequency) * (Math.random() * amplitude );
+                            for (let x = 0; x < canvas.width; x++) {
                         const srcX = x;
                         if (srcX >= 0 && srcX < canvas.height) {
                             l.ctx.drawImage(
@@ -1475,8 +1509,35 @@
                             Math.random() * y, Math.random() * x, (Math.random() * 255), (Math.random() * 25),
                             Math.random() * x, Math.random() * y, (Math.random() * 25), (Math.random() * 255)
                             );
-                        }
+                      }
+                     }
+                    }
+                    } else if(method == 'brushed') {
+                    
+                        for (let y = 0; y < canvas.height; y++) {
+                            let waveOffset;
+                            waveOffset = Math.tan(y * frequency) * (Math.random() * amplitude );
+                            for (let x = 0; x < canvas.width; x++) {
+                        const srcX = x;
+                        if (srcX >= 0 && srcX < canvas.height) {
+                            l.ctx.drawImage(
+                            tempCanvas,
+                            Math.random() + (Math.random() * x * y), x, 10, 1,
+                            Math.random() * x, Math.random() + (x * y), (Math.random() * 25), 1
+                            );
+                            l.ctx.drawImage(
+                            tempCanvas,
+                            Math.random() + (Math.random() * x * y), y, 10, 1,
+                            Math.random() * y, Math.random() + (Math.random() * y * x), (Math.random() * 25), 1
+                            );
+                      }
+                     }
+                    }
                     } else {
+                            for (let y = 0; y < canvas.height; y++) {
+                                let waveOffset;
+                                waveOffset = Math.tan(y * frequency) * (Math.random() * amplitude );
+                                for (let x = 0; x < canvas.width; x++) {
                             const srcX = x + waveOffset;
                             if (srcX >= 0 && srcX < canvas.width) {
                                 l.ctx.drawImage(
@@ -1485,9 +1546,9 @@
                                 x, y, 1, 1
                                 );
                             }
-                        }
+                      }
+                     }
                     }
-                }
                 l.ctx.restore();
             }
             
