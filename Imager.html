@@ -488,31 +488,31 @@
             this.maxUndoSteps = 10;
             
             // Circle selection
-        this.selCircle        = null; // {cx,cy,rx,ry}
-        this.selCircleDrawing = false;
-        this.selCircleStartX  = 0;
-        this.selCircleStartY  = 0;
-        
-        this.clipboard = null;
-        
-        this.eraserDrawing = false;
-        this.eraserSize    = 12;
-        
-        // Layer drag (middle mouse)
-        this.dragLayer = null;
-        this.dragOffX  = 0;
-        this.dragOffY  = 0;
-        
-        // Rotate
-        this.rotateActive  = false;  // holding left button on rotate tool
-        this.rotateDragX   = 0;      // last X for drag-rotate
-        this.rotateInterval = null;
-        
-        this.textPending = null;
-        this.lastX = null;
-        this.lastY = null; 
-        this.speed = 0.001;
-        this._init();
+            this.selCircle        = null; // {cx,cy,rx,ry}
+            this.selCircleDrawing = false;
+            this.selCircleStartX  = 0;
+            this.selCircleStartY  = 0;
+            
+            this.clipboard = null;
+            
+            this.eraserDrawing = false;
+            this.eraserSize    = 12;
+            
+            // Layer drag (middle mouse)
+            this.dragLayer = null;
+            this.dragOffX  = 0;
+            this.dragOffY  = 0;
+            
+            // Rotate
+            this.rotateActive  = false;  // holding left button on rotate tool
+            this.rotateDragX   = 0;      // last X for drag-rotate
+            this.rotateInterval = null;
+            
+            this.textPending = null;
+            this.lastX = null;
+            this.lastY = null; 
+            this.speed = 0.001;
+            this._init();
     }
 
     get activeLayer() { return this.layers[this.activeIdx] || null; }
@@ -525,7 +525,6 @@
         this._bindUI();
         this._render();
     }
-
 
     _addLayer(name, insertAtTop = false) {
         this.saveState();
@@ -1165,11 +1164,11 @@
         
         switch (this.tool) {
             
-            case 'select':
-            this.selCircle   = null;
-            this.selDrawing  = true;
-            this.selStartX   = x;
-            this.selStartY   = y;
+        case 'select':
+        this.selCircle   = null;
+        this.selDrawing  = true;
+        this.selStartX   = x;
+        this.selStartY   = y;
         this.sel         = { x, y, w: 0, h: 0 };
         break;
         
@@ -1178,51 +1177,51 @@
         this.selCircleDrawing  = true;
         this.selCircleStartX   = x;
         this.selCircleStartY   = y;
-    this.selCircle         = { cx: x, cy: y, rx: 0, ry: 0 };
-    break;
+        this.selCircle         = { cx: x, cy: y, rx: 0, ry: 0 };
+        break;
 
-    case 'eraser':
-    this.eraserDrawing = true;
-    this._erase(x, y);
-    break;
+        case 'eraser':
+        this.eraserDrawing = true;
+        this._erase(x, y);
+        break;
 
-    case 'fill': {
-        const l = this.activeLayer; if (!l) return;
-        const px = x - l.x, py = y - l.y;
-        
-        if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
-        const {cx, cy, rx, ry} = this.selCircle;
-        l.ctx.save();
-        l.ctx.beginPath();
-        l.ctx.ellipse(cx - l.x, cy - l.y, rx, ry, 0, 0, Math.PI * 2);
-        l.ctx.clip();
-        l.ctx.fillStyle = this.color;
-        l.ctx.fill();
-        l.ctx.restore();
-        this.selCircle = null;
-        this._render();
-        } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+        case 'fill': {
+            const l = this.activeLayer; if (!l) return;
+            const px = x - l.x, py = y - l.y;
+            
+            if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
+            const {cx, cy, rx, ry} = this.selCircle;
             l.ctx.save();
             l.ctx.beginPath();
-            l.ctx.rect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
+            l.ctx.ellipse(cx - l.x, cy - l.y, rx, ry, 0, 0, Math.PI * 2);
             l.ctx.clip();
             l.ctx.fillStyle = this.color;
-            l.ctx.fillRect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
+            l.ctx.fill();
             l.ctx.restore();
-            this.sel = null;
+            this.selCircle = null;
             this._render();
-            } else {
-                this._floodFill(l, px, py, this.color);
+            } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+                l.ctx.save();
+                l.ctx.beginPath();
+                l.ctx.rect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
+                l.ctx.clip();
+                l.ctx.fillStyle = this.color;
+                l.ctx.fillRect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
+                l.ctx.restore();
+                this.sel = null;
+                this._render();
+                } else {
+                    this._floodFill(l, px, py, this.color);
+                }
+                break;
             }
-            break;
-        }
-        
+            
         case 'text':
-    this.textPending = {x, y};
-    this._openTextModal();
-    break;
+        this.textPending = {x, y};
+        this._openTextModal();
+        break;
 
-    case 'rotate': {
+        case 'rotate': {
         this.rotateActive = true;
         this.rotateDragX  = x;
         this._startContinuousRotate();
@@ -1444,23 +1443,18 @@
             this._waves(layer, 'sin', 10, 0.05);
             break;
             case 'sine':
-            // Gentle sine wave (default)
             this._waves(layer, 'sin', 15, 0.04);
             break;
             case 'tangent':
-            // More dramatic tangent (now controlled)
             this._waves(layer, 'tan', 25, 0.03);
             break;
             case 'cosine':
-            // Cosine wave (smoother)
             this._waves(layer, 'cos', 20, 0.05);
             break;
             case 'square':
-            // Square wave (blocky)
             this._waves(layer, 'square', 30, 0.02);
             break;
             case 'sawtooth':
-            // Sawtooth wave (triangular)
             this._waves(layer, 'sawtooth', 25, 0.03);
             break;
         }
@@ -1780,27 +1774,23 @@
     const {x, y} = this.textPending;
     this.textPending = null;
 
-    /* 1. Measure text accurately */
     const tmp = document.createElement('canvas').getContext('2d');
     tmp.font = `${size}px ${fontface}, ${serif}`; // Chrome likes explicit bold/regular
     const metrics = tmp.measureText(text);
     const tw = Math.ceil(metrics.width) * 12; // generous padding
     const th = size + 24; // extra headroom
-
-    /* 2. Create layer */
+    
     const nl = this._addLayer(`Text: "${text.slice(0,12)}"`);
     nl.canvas.width  = tw;
     nl.canvas.height = th;
     nl.ctx = nl.canvas.getContext('2d');
 
-    /* 3. Draw centered */
     nl.ctx.font         = `${size}px ${fontface}, ${serif}`;
     nl.ctx.fillStyle    = this.color;
     nl.ctx.textBaseline = 'middle';
     nl.ctx.textAlign    = 'left';
     nl.ctx.fillText(text, tw/2, th/2);
 
-    /* 4. Position layer so the click point is the text center */
     nl.x = x - tw/2;
     nl.y = y - th/2;
 
@@ -1811,27 +1801,22 @@
     _resizeLayerPercent(layer, percent) {
         this.saveState();
         
-        // Get current dimensions
         const originalWidth = layer.canvas.width;
         const originalHeight = layer.canvas.height;
-        
-        // Calculate new dimensions
+
         const newWidth = Math.round(originalWidth * (percent / 100));
         const newHeight = Math.round(originalHeight * (percent / 100));
         
-        // Create temporary canvas to preserve content
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = originalWidth;
         tempCanvas.height = originalHeight;
         const tempCtx = tempCanvas.getContext('2d');
         tempCtx.drawImage(layer.canvas, 0, 0);
-        
-        // Resize the layer's canvas
+
         layer.canvas.width = newWidth;
         layer.canvas.height = newHeight;
         layer.ctx = layer.canvas.getContext('2d');
         
-        // Draw the preserved content at the new size
         layer.ctx.drawImage(tempCanvas, 0, 0, newWidth, newHeight);
         
         this._render();
@@ -2087,7 +2072,6 @@
         this.setZoom(this.zoomLevel / 1.2);
     }
 
-    // NEW: Canvas coordinate conversion with zoom
     _canvasXY(e) {
         const r = this.mainCanvas.getBoundingClientRect();
         const x = (e.clientX - r.left) / this.zoomLevel;
@@ -2095,9 +2079,8 @@
     return { x: Math.round(x), y: Math.round(y) };
     }
 
-    // NEW: Undo functionality
     saveState() {
-        // Save current state to undo stack
+    
         const state = {
             layers: this.layers.map(layer => {
                 const copy = new Layer(layer.canvas.width, layer.canvas.height, layer.name);
