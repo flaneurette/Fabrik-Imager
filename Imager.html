@@ -621,7 +621,7 @@
         item.id = idx;
 
     if (idx === this.activeIdx) {
-        item.classList.add('active');
+        //item.classList.add('active');
     }
 
     // Visibility toggle
@@ -629,7 +629,7 @@
     visToggle.className = `visibility ${layer.visible ? 'visible' : 'hidden'}`;
     visToggle.onclick = () => {
         layer.visible = !layer.visible;
-        this._refreshLayersPanel();
+        //this._refreshLayersPanel();
         this._render();
     };
 
@@ -639,7 +639,7 @@
     nameSpan.textContent = layer.name;
     nameSpan.onclick = () => {
         this.activeIdx = idx;
-        this._refreshLayersPanel();
+        //this._refreshLayersPanel();
     };
 
     // Move buttons
@@ -1971,17 +1971,19 @@
 
         // Mouse event handler should be outside the keyboard event check
         document.getElementById('layersList').addEventListener('mousedown', (e) => {
-            if (e.ctrlKey && e.button === 0) { // Left mouse button
-                if (e.target.classList.contains('layer-item')) {
-                    const idx = Array.from(e.currentTarget.children).indexOf(e.target);
+            if (e.button === 0) {
+                const item = e.target.closest('.layer-item');
+                if (item) {
+                    const idx = Array.from(e.currentTarget.children).indexOf(item);
                     if (idx !== -1) {
-                        e.target.style.backgroundColor = 'purple';
                         this.selectedLayers.push(idx);
+                        item.style.setProperty('background-color', 'purple', 'important');
                     }
                 }
             }
         });
-              
+      
+        
         document.addEventListener('keydown', e => {
         
             if (document.getElementById('textModal').classList.contains('open')) return;
@@ -2187,8 +2189,7 @@
         this.selectedLayers = [];
         this._refreshLayersPanel();
         this._render();
-        
-    console.log(`Merged ${selectedIndices.length} layers into one`);
+       
     }
 
     }
