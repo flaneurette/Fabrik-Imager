@@ -208,6 +208,7 @@
         <option value="1">Round</option>
         <option value="2">Square</option>
         <option value="3">Spray</option>
+        <option value="4">Rand</option>
     </select>
     <select name="brushsize" title="Brush size" id="brushsize">
         <option value="1">1</option>
@@ -601,10 +602,22 @@
             case '3':
             ctx.fillStyle = brushColor;
             for (let i = 0; i <  brushSize; i++) {
-                const offsetX = (Math.random() - 0.5) * brushSize;
-                const offsetY = (Math.random() - 0.5) * brushSize;
+                const offsetX = (Math.random() - 0.3) * brushSize;
+                const offsetY = (Math.random() - 0.3) * brushSize;
                 ctx.beginPath();
                 ctx.arc(x + offsetX, y + offsetY, 1, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            break;
+            case '4':
+            ctx.fillStyle = brushColor;
+            for (let i = 0; i <  brushSize; i++) {
+                const offsetX = (Math.random()) * brushSize * 22;
+                const offsetY = (Math.random()) * brushSize * 2;
+                ctx.beginPath();
+                ctx.arc(x + offsetX + Math.PI * 2, y + Math.PI * 2, 1, 0, Math.PI * 2);
+                ctx.arc(x + offsetX + Math.PI * 2, y + Math.PI * 2, 1, 0, Math.PI * 2);
+                ctx.arc(x + offsetX + Math.PI * 2, y + Math.PI * 2, 1, 0, Math.PI * 2);
                 ctx.fill();
             }
             break;
