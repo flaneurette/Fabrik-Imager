@@ -637,7 +637,7 @@
                 arrow: [
                     {x: 0, y: 10}, {x: 15, y: 10}, {x: 15, y: 5}, {x: 20, y: 10},
                     {x: 15, y: 15}, {x: 15, y: 10}, {x: 0, y: 10}
-                ]
+                ],
             };
 
             this.textPending = null;
@@ -659,23 +659,23 @@
     }
 
     _drawShape(value) {
-        this.saveState(); // Save canvas state
+        this.saveState();
     
-        // Use active layer context consistently
         const ctx = this.activeLayer?.ctx;
         if (!ctx) return;
     
-        // Draw the shape (using fixed position as in your original)
+        // Set styles
+        ctx.strokeStyle = document.getElementById('brushcolor').value || '#000000';
+        ctx.lineWidth = Math.max(1, parseInt(document.getElementById('brushsize').value) || 2);
+    
         const template = this.shapeTemplates[value];
         if (!template) return;
-        let scale = 15;
-        let x = 500;
-        let y = 500;
-        // Set styles first
-        ctx.strokeStyle = document.getElementById('brushcolor').value || '#000000';
-        ctx.lineWidth = document.getElementById('brushsize').value || 1;
     
-        // Draw the shape
+        // Scale factor to make shapes ~500px
+        const scale = 25; // Adjust this value to change size
+        const x = 500; // Use mouse position
+        const y = 300;
+    
         ctx.beginPath();
         template.forEach((point, i) => {
             const px = x + (point.x - 10) * scale; // Center adjustment
