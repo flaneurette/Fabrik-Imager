@@ -53,8 +53,8 @@
     .tool-btn:hover { background: #111; }
     .tool-btn.active { background: #00cc58; border-color: #00cc58; color: #fff; }
     .toolbar-sep { width: 1px; height: 28px; background: #555; margin: 0 4px; }
-    .color-picker { width: 40px; height: 40px; border: none; padding: 5px; cursor: pointer; background: none; }
-    #inputW, #inputH, .quality-slider { background: #000; color: #666; width: 55px; cursor: pointer; padding:5px; border: 0px solid black; }
+    .color-picker { width: 31px; height: 34px; border: none; cursor: pointer; background: none; }
+    #inputW, #inputH, .quality-slider { background: #000; color: #666; width: 33px; cursor: pointer; padding:5px; border: 0px solid black; }
     .quality-value { color: #333; font-size: 12px; min-width: 15px; }
     .tb-btn {
         padding: 5px 10px; background: #333; color: #fff;
@@ -178,19 +178,18 @@
         color:#000;
     }
     small {
-        color:#666;
+        color:#fff;
     }
-    #brushsize {
+    #brushsize, #brushtype {
         outline: none;
         padding: 5px;
         background-color: #333;
         color: #fff;
     }
     #brushcolor {
-        width: 50px;
-        padding: 5px;
-        background-color: #333;
         color: #fff;
+        width: 31px; 
+        height: 34px; border: none; cursor: pointer; background: none;
     }
     </style>
     </head>
@@ -205,6 +204,11 @@
     <button class="tb-btn" id="btnSaveSel">Save selection</button>
     <div class="toolbar-sep"></div>
     <div class="tool-btn" data-tool="brush" title="Draw with brush">🖌️</div>
+    <select name="brushtype" title="Brush type" id="brushtype">
+        <option value="1">Round</option>
+        <option value="2">Square</option>
+        <option value="3">Spray</option>
+    </select>
     <select name="brushsize" title="Brush size" id="brushsize">
         <option value="1">1</option>
         <option value="2">2</option>
@@ -235,8 +239,8 @@
     <button class="tb-btn" id="btnZoomIn"  title="Zoom In (+)">+</button>
     <button class="tb-btn" id="btnZoomOut" title="Zoom Out (-)">-</button>
     <div class="toolbar-sep"></div>
-    <small>Layer Size:</small><input type="number" id="resizePercent" class="quality-slider" min="1" max="1000" value="100" size="3" title="Resize layer percentage">%
-    <button class="tb-btn" id="btnResizeLayer" title="Resize active layer">Resize layer</button>
+    <small>Layer:</small><input type="text" id="resizePercent" class="quality-slider" min="1" max="1000" value="100" size="3" title="Resize layer percentage">%
+    <button class="tb-btn" id="btnResizeLayer" title="Resize active layer">Resize L</button>
     <select class="tb-btn" id="effects"  title="Effects">
         <option value="" class="option-sep">Layer effect</option>
         <option value="blur">Blur</option>
@@ -571,15 +575,41 @@
         e.preventDefault(); // Prevent scrolling on touch devices
         this.tool = 'brush';
         const ctx = this.activeLayer.ctx;
-        //const ctx = this.mainCanvas.getContext('2d');
         const { x, y } = this._canvasXY(e);
-        ctx.beginPath();
-        ctx.moveTo(this.lastPos.x, this.lastPos.y);
-        ctx.lineTo(x, y);
-        ctx.strokeStyle =  document.getElementById('brushcolor').value || '#000000'; // Default color
-        ctx.lineWidth = document.getElementById('brushsize').value || 1; // Default brush size
-        ctx.lineCap = 'round';
-        ctx.stroke();
+        let brushType = document.getElementById('brushtype').value || 1;
+        let brushColor = document.getElementById('brushcolor').value || '#000000'; 
+        let brushSize = document.getElementById('brushsize').value || 1; // Default brush size
+        switch(brushType) {
+            case '1':
+                ctx.beginPath();
+                ctx.moveTo(this.lastPos.x, this.lastPos.y);
+                ctx.lineTo(x, y);
+                ctx.strokeStyle =  brushColor;
+                ctx.lineWidth = brushSize;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            break;
+            case '2':
+                ctx.beginPath();
+                ctx.moveTo(this.lastPos.x, this.lastPos.y);
+                ctx.lineTo(x, y);
+                ctx.strokeStyle =  brushColor;
+                ctx.lineWidth = brushSize;
+                ctx.lineCap = 'square';
+                ctx.stroke();
+            break;
+            case '3':
+            ctx.fillStyle = brushColor;
+            for (let i = 0; i <  brushSize; i++) {
+                const offsetX = (Math.random() - 0.5) * brushSize;
+                const offsetY = (Math.random() - 0.5) * brushSize;
+                ctx.beginPath();
+                ctx.arc(x + offsetX, y + offsetY, 1, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            break;
+        }
+
         this.lastPos = { x, y };
         this._render();
     }
