@@ -6,10 +6,50 @@
     <title>F/\brik Imager</title>
     <style>
 
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+   * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
     body { background: #2b2b2b; overflow: hidden; user-select: none; }
     .editor-container { display: flex; flex-direction: column; height: 100vh; }
 
+    /* TOOLBAR */
+    .toolbar {
+        background: #222;
+        border-bottom: 1px solid #222;
+        padding: 5px 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        color: #666;
+    }
+    .tool-btn {
+        width: 28px; height: 28px;
+        background: #333;
+        border: 1px solid #666;
+        border-radius: 4px;
+        color: #ddd;
+        font-size: 14px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+    }
+    .layer-move, .layer-delete {
+        width: 18px; height: 18px;
+        background: #333;
+        border: 1px solid #666;
+        border-radius: 4px;
+        padding: 10px;
+        color: #ddd;
+        font-size: 12px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+    }
+    #fontFaces {
+        background: #333;
+        border: 1px solid #666;
+        border-radius: 4px;
+        color: #ddd;
+        padding:5px;
+        display: block;
+    }
     /* TOOLBAR */
     .toolbar {
         background: #222;
@@ -55,7 +95,7 @@
     .tool-btn.active { background: #00cc58; border-color: #00cc58; color: #fff; }
     .toolbar-sep { width: 1px; height: 28px; background: #555; margin: 0 4px; }
     .color-picker { width: 31px; height: 34px; border: none; cursor: pointer; background: none; }
-    #inputW, #inputH, .quality-slider { background: #000; color: #fff; width: 33px; cursor: pointer; padding:5px; border: 0px solid black; }
+    #inputW, #inputH, .quality-slider { background: #000; color: #fff; width: 45px; cursor: pointer; padding:5px; border: 0px solid black; }
     .quality-value { color: #333; font-size: 12px; min-width: 15px; }
     .tb-btn {
         padding: 5px 10px; background: #333; color: #fff;
@@ -182,7 +222,7 @@
     small {
         color:#fff;
     }
-    #brushsize, #brushtype {
+    #brushsize, #brushtype, #shapeDropdown {
         outline: none;
         padding: 5px;
         background-color: #333;
@@ -253,6 +293,17 @@
     <button class="tb-btn" id="btnZoomIn"  title="Zoom In (+)">+</button>
     <button class="tb-btn" id="btnZoomOut" title="Zoom Out (-)">-</button>
     <div class="toolbar-sep"></div>
+        <select id="shapeDropdown">
+            <option value="">-- Shapes --</option>
+            <option value="line">Line</option>
+            <option value="box">Rectangle</option>
+            <option value="arrow">Arrow</option>
+            <option value="circle">Circle</option>
+            <option value="triangle">Triangle</option>
+            <option value="star">Star</option>
+            <option value="pentagram">Pentagram</option>
+        </select>
+    <div class="toolbar-sep"></div>
     <small>Layer:</small><input type="text" id="resizePercent" class="quality-slider" min="1" max="1000" value="100" size="3" title="Resize layer percentage">%
     <button class="tb-btn" id="btnResizeLayer" title="Resize active layer">Resize L</button>
     <select class="tb-btn" id="effects"  title="Effects">
@@ -304,9 +355,9 @@
     <div class="workarea-column">
     <div class="workarea-bar" style="margin-left:15px;">
     <span>Canvas size:</span>
-    <input type="number" id="inputW" value="1200" min="1" max="8000">
+    <input type="text" id="inputW" value="1200" min="1" max="8000">
     <span>×</span>
-    <input type="number" id="inputH" value="700"  min="1" max="8000">
+    <input type="text" id="inputH" value="700"  min="1" max="8000">
     <span>px</span>
     <button id="btnResize">Apply</button>
     </div>
@@ -558,6 +609,37 @@
             this.isDrawing = false;
             this.lastPos = {};
 
+           this.shapeTemplates = {
+                // Basic shapes
+                line: [
+                    {x: 0, y: 0}, {x: 20, y: 0}  // Straight line
+                ],
+                box: [
+                    {x: 0, y: 0}, {x: 20, y: 0}, {x: 20, y: 20}, {x: 0, y: 20}, {x: 0, y: 0}
+                ],
+                triangle: [
+                    {x: 10, y: 0}, {x: 0, y: 20}, {x: 20, y: 20}, {x: 10, y: 0}
+                ],
+            
+                // Advanced shapes
+                circle: Array.from({length: 16}, (_, i) => ({
+                    x: 10 + 10 * Math.cos(i * Math.PI / 8),
+                    y: 10 + 10 * Math.sin(i * Math.PI / 8)
+                })),
+                star: Array.from({length: 10}, (_, i) => ({
+                    x: 10 + (i % 2 === 0 ? 10 : 5) * Math.cos(i * Math.PI / 5),
+                    y: 10 + (i % 2 === 0 ? 10 : 5) * Math.sin(i * Math.PI / 5)
+                })),
+                pentagram: Array.from({length: 5}, (_, i) => ({
+                    x: 10 + 10 * Math.cos(i * 4 * Math.PI / 5),
+                    y: 10 + 10 * Math.sin(i * 4 * Math.PI / 5)
+                })),
+                arrow: [
+                    {x: 0, y: 10}, {x: 15, y: 10}, {x: 15, y: 5}, {x: 20, y: 10},
+                    {x: 15, y: 15}, {x: 15, y: 10}, {x: 0, y: 10}
+                ]
+            };
+
             this.textPending = null;
             this.lastX = null;
             this.lastY = null; 
@@ -573,6 +655,41 @@
         this._bindCanvas();
         this._bindKeys();
         this._bindUI();
+        this._render();
+    }
+
+    _drawShape(value) {
+        this.saveState(); // Save canvas state
+    
+        // Use active layer context consistently
+        const ctx = this.activeLayer?.ctx;
+        if (!ctx) return;
+    
+        // Draw the shape (using fixed position as in your original)
+        const template = this.shapeTemplates[value];
+        if (!template) return;
+        let scale = 15;
+        let x = 500;
+        let y = 500;
+        // Set styles first
+        ctx.strokeStyle = document.getElementById('brushcolor').value || '#000000';
+        ctx.lineWidth = document.getElementById('brushsize').value || 1;
+    
+        // Draw the shape
+        ctx.beginPath();
+        template.forEach((point, i) => {
+            const px = x + (point.x - 10) * scale; // Center adjustment
+            const py = y + (point.y - 10) * scale;
+    
+            if (i === 0) {
+                ctx.moveTo(px, py);
+            } else {
+                ctx.lineTo(px, py);
+            }
+        });
+        ctx.closePath();
+        ctx.stroke();
+    
         this._render();
     }
 
@@ -2071,6 +2188,10 @@
                 this.mainCanvas.style.cursor = cursors[this.tool] || 'crosshair';
             document.getElementById('statusTool').textContent = `Tool: ${btn.title.split(' (')[0]}`;
         });
+    });
+
+    document.getElementById('shapeDropdown').addEventListener('change', e => {
+        this._drawShape(e.target.value);
     });
 
     document.getElementById('colorPicker').addEventListener('input', e => {
