@@ -15,6 +15,7 @@ PNG, JPEG, GIF, AVIF. (except for Firefox, which only support PNG blobs)
 Menu:
 
 - Open/save images files. (also: save a selection)
+- Brushes, styles: pencil, round, square, spray, rand.
 - Drag/Pointer
 - Resize a layer
 - Rectangle
