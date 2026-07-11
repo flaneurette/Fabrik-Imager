@@ -55,7 +55,7 @@
     .tool-btn.active { background: #00cc58; border-color: #00cc58; color: #fff; }
     .toolbar-sep { width: 1px; height: 28px; background: #555; margin: 0 4px; }
     .color-picker { width: 31px; height: 34px; border: none; cursor: pointer; background: none; }
-    #inputW, #inputH, .quality-slider { background: #000; color: #666; width: 33px; cursor: pointer; padding:5px; border: 0px solid black; }
+    #inputW, #inputH, .quality-slider { background: #000; color: #fff; width: 33px; cursor: pointer; padding:5px; border: 0px solid black; }
     .quality-value { color: #333; font-size: 12px; min-width: 15px; }
     .tb-btn {
         padding: 5px 10px; background: #333; color: #fff;
@@ -542,7 +542,7 @@
             this.clipboard = null;
             
             this.eraserDrawing = false;
-            this.eraserSize    = 12;
+            this.eraserSize    = 5;
             
             // Layer drag (middle mouse)
             this.dragLayer = null;
@@ -1274,6 +1274,9 @@
                     case 'brush':
                     this.stopDrawing();
                     break;
+                    case 'eraser':
+                    this._stopErasing();
+                    break;
                 }
         });
 
@@ -1324,8 +1327,8 @@
         break;
 
         case 'eraser':
-        this.eraserDrawing = true;
-        this._erase(x, y);
+             this.eraserDrawing = true;
+             this._erase(e);
         break;
 
         case 'fill': {
@@ -1385,6 +1388,12 @@
         return;
     }
 
+    if (this.tool === 'eraser' && e.button == 0) { 
+        //this.eraserDrawing = true;
+        this._erase(e);
+        return;
+    }
+
     if (this.selDrawing && this.tool === 'select') {
         this.sel = this._normalizeRect(this.selStartX, this.selStartY, x, y);
         this._render();
@@ -1396,16 +1405,12 @@
         const ry = Math.abs(y - this.selCircleStartY) / 2;
         const cx = (x + this.selCircleStartX) / 2;
         const cy = (y + this.selCircleStartY) / 2;
-    this.selCircle = { cx, cy, rx, ry };
-    this._render();
+        this.selCircle = { cx, cy, rx, ry };
+        this._render();
     return;
     }
 
-    if (this.tool === 'pencil') {
-        this._continueDrawing(x, y);
-        } else if (this.tool === 'eraser') {
-            this._continueErasing(x, y);
-        }
+
     });
 
     cv.addEventListener('mouseup', e => {
@@ -1428,8 +1433,9 @@
             }
         }
         
-        if (this.tool === 'pencil' || this.tool === 'eraser') {
-            this._stopDrawing();
+        if (this.tool === 'eraser') {
+            sthis.eraserDrawing = false;
+            this._stopErasing();
         }
 
         if (this.tool === 'rotate') {
@@ -1442,36 +1448,47 @@
         if(e.button === 2) {
             if (this.tool === 'rotate') {
                 this._startContinuousRotate('right');
-            }
+            } 
         }
     });
     
-    cv.addEventListener('mouseleave', () => {
-        if (this.dragLayer) {
-            this.dragLayer = null;
-            this.mainCanvas.style.cursor = 'crosshair';
-        }
-        if (this.selDrawing) {
-            this.selDrawing = false;
-        }
-        if (this.selCircleDrawing) {
-            this.selCircleDrawing = false;
-        }
-        if (this.tool === 'pencil' || this.tool === 'eraser') {
-            this._stopDrawing();
-        }
-        if (this.tool === 'rotate') {
-         this._stopContinuousRotate();
-        }
-    });
-}
-    _erase(x, y) {
+    cv.addEventListener('mouseleave', e => {
+            if (this.dragLayer) {
+                this.dragLayer = null;
+                this.mainCanvas.style.cursor = 'crosshair';
+            }
+            if (this.selDrawing) {
+                this.selDrawing = false;
+            }
+            if (this.selCircleDrawing) {
+                this.selCircleDrawing = false;
+            }
+            if (this.tool === 'eraser' && e.button === 0) { 
+                this.eraserDrawing = true;
+                this._erase(e);
+            }
+            if (this.tool === 'rotate') {
+             this._stopContinuousRotate();
+            }
+        });
+    }
+    _erase(e) {
+
+        if (!this.eraserDrawing || !this.activeLayer) return;
+
         this.saveState();
+        this.eraserDrawing = true;
+        const { x, y } = this._canvasXY(e);
         const l = this.activeLayer; if (!l) return;
         const px = x - l.x, py = y - l.y;
-        const s  = this.eraserSize;
+        const s  = document.getElementById('brushsize').value || this.eraserSize;
         l.ctx.clearRect(px - s/2, py - s/2, s, s);
         this._render();
+    }
+
+    _stopErasing() {
+        this.eraserDrawing = false;
+        this._erase();
     }
 
     _openTextModal() {
