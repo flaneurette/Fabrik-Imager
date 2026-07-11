@@ -193,6 +193,17 @@
         width: 31px; 
         height: 34px; border: none; cursor: pointer; background: none;
     }
+    #tb-eraser {
+        padding-top:4px;
+        font-size: 13px;
+    }
+    #tb-fill {
+        padding-top:-2px;
+    }
+    #tb-circle {
+        padding-top: 2px;
+        padding-left: 2px;
+    }
     </style>
     </head>
     <body>
@@ -230,9 +241,9 @@
     <div class="toolbar-sep"></div>
     <div class="tool-btn active" data-tool="pointer" title="Pointer (V) to drag...">✥</div>
     <div class="tool-btn" data-tool="select"       title="Rect Select (S)">⬚</div>
-    <div class="tool-btn" data-tool="selectcircle" title="Ellipse Select (C)">⭘</div>
-    <div class="tool-btn" data-tool="eraser"       title="Eraser (E)">⌫</div>
-    <div class="tool-btn" data-tool="fill"         title="Fill (F)">▨</div>
+    <div class="tool-btn" data-tool="selectcircle" id="tb-circle" title="Ellipse Select (C)">⭘</div>
+    <div class="tool-btn" data-tool="eraser"       id="tb-eraser" title="Eraser (E)">⌫</div>
+    <div class="tool-btn" data-tool="fill"         id="tb-fill" title="Fill (F)">▨</div>
     <div class="tool-btn" data-tool="text"         title="Text (T)">T</div>
     <div class="tool-btn" data-tool="rotate"       title="Rotate Layer (R)">↻</div>
     <div class="toolbar-sep"></div>
