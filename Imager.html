@@ -1309,6 +1309,7 @@
         }
        
         _startContinuousRotate(direction='left', delta=0.1) {
+            this.saveState();
 
             let lastX = null;
             let lastY = null;
@@ -1323,7 +1324,7 @@
                 lastX = e.clientX;
                 lastY = e.clientY;
             };
-
+            
             this.mainCanvas.addEventListener('mousemove', this._mouseMoveHandler);
   
             this._stopContinuousRotate();
@@ -1589,10 +1590,9 @@
             }
         });
     }
+
     _erase(e) {
-
         if (!this.eraserDrawing || !this.activeLayer) return;
-
         this.saveState();
         this.eraserDrawing = true;
         const { x, y } = this._canvasXY(e);
@@ -2405,6 +2405,7 @@
     }
 
     _mergeSelectedLayers() {
+
         if (this.layers.length <= 1) return;
         
         // Ensure we have selected layers
