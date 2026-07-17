@@ -1,6 +1,6 @@
 # Fabrik Imager
 
-<img src="screen.png" />
+<img src="Screenshot.png" />
 
 A minimalist graphic photo editor to edit and create images. Not the same as Gimp, Photoshop, Photopea, Canva or Paint, but rather unique as it has limited, but creative! functions.
 
