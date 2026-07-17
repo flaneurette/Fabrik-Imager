@@ -1058,43 +1058,59 @@
         
         // Draw selection outline if active
         if (this.currentSelection) {
-            this._drawSelectionOutline(
-                this.currentSelection.x,
-                this.currentSelection.y,
-                this.currentSelection.width,
-                this.currentSelection.height
-            );
+            this._drawSelectionOutline(this.currentSelection, this.activeLayer);
         }
 
         this.mainCtx.restore();
         this._updateStatus();
     }
 
-    _drawSelectionOutline(x, y, width, height) {
-        // Save current context state
-        const ctx = this.mainCanvas.getContext('2d');
-        ctx.save();
+_drawSelectionOutline(selection, layer) {
+    const ctx = this.mainCanvas.getContext('2d');
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0, 120, 255, 0.9)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
 
-        // Set up dashed line style
-        ctx.strokeStyle = 'rgba(0, 120, 255, 0.8)'; // Semi-transparent blue
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 4]); // Dashed pattern: 6px dash, 4px space
-
-        // Draw rectangle
-        ctx.strokeRect(x, y, width, height);
-
-        // Draw corner markers (optional)
-        const cornerSize = 8;
-        ctx.fillStyle = 'rgba(0, 120, 255, 0.8)';
-        ctx.fillRect(x - cornerSize/2, y - cornerSize/2, cornerSize, cornerSize); // Top-left
-        ctx.fillRect(x + width - cornerSize/2, y - cornerSize/2, cornerSize, cornerSize); // Top-right
-        ctx.fillRect(x - cornerSize/2, y + height - cornerSize/2, cornerSize, cornerSize); // Bottom-left
-        ctx.fillRect(x + width - cornerSize/2, y + height - cornerSize/2, cornerSize, cornerSize); // Bottom-right
-
-        // Restore context state
-        ctx.restore();
+    if (selection.pixels && selection.pixels.length) {
+        this._drawPixelOutline(ctx, selection.pixels, layer);
+    } else {
+        // Fallback for rectangular selections (e.g. marquee tool)
+        ctx.strokeRect(selection.x, selection.y, selection.width, selection.height);
     }
 
+    ctx.restore();
+}
+
+_drawPixelOutline(ctx, pixels, layer) {
+    const pixelSet = new Set(pixels);
+    ctx.beginPath();
+
+    pixelSet.forEach(pixel => {
+        const [x, y] = pixel.split(',').map(Number);
+        const canvasX = layer.x + x;
+        const canvasY = layer.y + y;
+
+        if (!pixelSet.has(`${x},${y - 1}`)) {
+            ctx.moveTo(canvasX, canvasY);
+            ctx.lineTo(canvasX + 1, canvasY);
+        }
+        if (!pixelSet.has(`${x},${y + 1}`)) {
+            ctx.moveTo(canvasX, canvasY + 1);
+            ctx.lineTo(canvasX + 1, canvasY + 1);
+        }
+        if (!pixelSet.has(`${x - 1},${y}`)) {
+            ctx.moveTo(canvasX, canvasY);
+            ctx.lineTo(canvasX, canvasY + 1);
+        }
+        if (!pixelSet.has(`${x + 1},${y}`)) {
+            ctx.moveTo(canvasX + 1, canvasY);
+            ctx.lineTo(canvasX + 1, canvasY + 1);
+        }
+    });
+
+    ctx.stroke();
+}
     _resizeCanvas(w, h) {
         this.saveState();
     
@@ -2567,171 +2583,171 @@
     catch(err) { console.error('Editor failed to start:', err); }
     });
 
-class MagicWand {
-    constructor(editor) {
-        this.editor = editor;
-        this.tolerance = 32;
-        this.selectedPixels = new Set();
-    }
-
-    select(x, y) {
-        this.selectedPixels.clear();
-
-        const layer = this.editor.activeLayer;
-        if (!layer) {
-            console.warn('Magic Wand: No active layer to select from');
-            return null;
+    class MagicWand {
+        constructor(editor) {
+            this.editor = editor;
+            this.tolerance = 10;
+            this.selectedPixels = new Set();
         }
-
-        this.layerWidth = layer.canvas.width;
-        this.layerHeight = layer.canvas.height;
-
-        const layerPoint = this._canvasToLayerCoords(layer, x, y);
-
-        if (layerPoint.x < 0 || layerPoint.x >= this.layerWidth ||
-            layerPoint.y < 0 || layerPoint.y >= this.layerHeight) {
-            console.warn('Magic Wand: Click outside layer bounds');
-            return null;
+    
+        select(x, y) {
+            this.selectedPixels.clear();
+    
+            const layer = this.editor.activeLayer;
+            if (!layer) {
+                console.warn('Magic Wand: No active layer to select from');
+                return null;
+            }
+    
+            this.layerWidth = layer.canvas.width;
+            this.layerHeight = layer.canvas.height;
+    
+            const layerPoint = this._canvasToLayerCoords(layer, x, y);
+    
+            if (layerPoint.x < 0 || layerPoint.x >= this.layerWidth ||
+                layerPoint.y < 0 || layerPoint.y >= this.layerHeight) {
+                console.warn('Magic Wand: Click outside layer bounds');
+                return null;
+            }
+    
+            let imageData;
+            try {
+                imageData = layer.ctx.getImageData(0, 0, this.layerWidth, this.layerHeight);
+            } catch (e) {
+                console.error('Magic Wand: Failed to get image data', e);
+                return null;
+            }
+    
+            const data = imageData.data;
+    
+            const startColor = this._getPixelColor(data, layerPoint.x, layerPoint.y);
+            if (!startColor) {
+                console.warn('Magic Wand: Could not get start color');
+                return null;
+            }
+    
+            this._floodFill(data, layerPoint.x, layerPoint.y, startColor);
+    
+            const bounds = this._calculateBounds();
+    
+            const mainBounds = {
+                minX: bounds.minX + layer.x,
+                minY: bounds.minY + layer.y,
+                maxX: bounds.maxX + layer.x,
+                maxY: bounds.maxY + layer.y
+            };
+    
+            return {
+                pixels: Array.from(this.selectedPixels),
+                bounds: mainBounds,
+                width: mainBounds.maxX - mainBounds.minX,
+                height: mainBounds.maxY - mainBounds.minY,
+                x: mainBounds.minX,
+                y: mainBounds.minY,
+                layerX: bounds.minX,
+                layerY: bounds.minY
+            };
         }
-
-        let imageData;
-        try {
-            imageData = layer.ctx.getImageData(0, 0, this.layerWidth, this.layerHeight);
-        } catch (e) {
-            console.error('Magic Wand: Failed to get image data', e);
-            return null;
+    
+        _canvasToLayerCoords(layer, canvasX, canvasY) {
+            const centerX = layer.x + layer.canvas.width / 2;
+            const centerY = layer.y + layer.canvas.height / 2;
+    
+            let x = canvasX - centerX;
+            let y = canvasY - centerY;
+    
+            const cos = Math.cos(-layer.rotation);
+            const sin = Math.sin(-layer.rotation);
+    
+            const rotatedX = x * cos - y * sin;
+            const rotatedY = x * sin + y * cos;
+    
+            return {
+                x: Math.round(rotatedX + layer.canvas.width / 2),
+                y: Math.round(rotatedY + layer.canvas.height / 2)
+            };
         }
-
-        const data = imageData.data;
-
-        const startColor = this._getPixelColor(data, layerPoint.x, layerPoint.y);
-        if (!startColor) {
-            console.warn('Magic Wand: Could not get start color');
-            return null;
+    
+        _getPixelColor(data, x, y) {
+            if (x < 0 || x >= this.layerWidth || y < 0 || y >= this.layerHeight) {
+                return null;
+            }
+            const idx = (y * this.layerWidth + x) * 4;
+            if (idx + 3 >= data.length) return null;
+    
+            return {
+                r: data[idx],
+                g: data[idx + 1],
+                b: data[idx + 2],
+                a: data[idx + 3]
+            };
         }
-
-        this._floodFill(data, layerPoint.x, layerPoint.y, startColor);
-
-        const bounds = this._calculateBounds();
-
-        const mainBounds = {
-            minX: bounds.minX + layer.x,
-            minY: bounds.minY + layer.y,
-            maxX: bounds.maxX + layer.x,
-            maxY: bounds.maxY + layer.y
-        };
-
-        return {
-            pixels: Array.from(this.selectedPixels),
-            bounds: mainBounds,
-            width: mainBounds.maxX - mainBounds.minX,
-            height: mainBounds.maxY - mainBounds.minY,
-            x: mainBounds.minX,
-            y: mainBounds.minY,
-            layerX: bounds.minX,
-            layerY: bounds.minY
-        };
-    }
-
-    _canvasToLayerCoords(layer, canvasX, canvasY) {
-        const centerX = layer.x + layer.canvas.width / 2;
-        const centerY = layer.y + layer.canvas.height / 2;
-
-        let x = canvasX - centerX;
-        let y = canvasY - centerY;
-
-        const cos = Math.cos(-layer.rotation);
-        const sin = Math.sin(-layer.rotation);
-
-        const rotatedX = x * cos - y * sin;
-        const rotatedY = x * sin + y * cos;
-
-        return {
-            x: Math.round(rotatedX + layer.canvas.width / 2),
-            y: Math.round(rotatedY + layer.canvas.height / 2)
-        };
-    }
-
-    _getPixelColor(data, x, y) {
-        if (x < 0 || x >= this.layerWidth || y < 0 || y >= this.layerHeight) {
-            return null;
-        }
-        const idx = (y * this.layerWidth + x) * 4;
-        if (idx + 3 >= data.length) return null;
-
-        return {
-            r: data[idx],
-            g: data[idx + 1],
-            b: data[idx + 2],
-            a: data[idx + 3]
-        };
-    }
-
-    _floodFill(data, x, y, startColor) {
-        const width = this.layerWidth;
-        const height = this.layerHeight;
-        const queue = [{x, y}];
-        const startR = startColor.r, startG = startColor.g, startB = startColor.b;
-
-        if (startColor.a === 0) return;
-
-        const seen = new Uint8Array(width * height);
-        seen[y * width + x] = 1;
-
-        while (queue.length) {
-            const {x, y} = queue.pop();
-            const idx = (y * width + x) * 4;
-
-            if (idx < 0 || idx + 3 >= data.length) continue;
-
-            const r = data[idx];
-            const g = data[idx + 1];
-            const b = data[idx + 2];
-            const a = data[idx + 3];
-
-            if (a === 0) continue;
-
-            const colorMatch = (
-                Math.abs(r - startR) <= this.tolerance &&
-                Math.abs(g - startG) <= this.tolerance &&
-                Math.abs(b - startB) <= this.tolerance
-            );
-
-            if (!colorMatch) continue;
-
-            this.selectedPixels.add(`${x},${y}`);
-
-            const neighbors = [
-                [x+1, y], [x-1, y], [x, y+1], [x, y-1]
-            ];
-
-            for (const [nx, ny] of neighbors) {
-                if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
-                const nIdx = ny * width + nx;
-                if (seen[nIdx]) continue;
-                seen[nIdx] = 1;
-                queue.push({x: nx, y: ny});
+    
+        _floodFill(data, x, y, startColor) {
+            const width = this.layerWidth;
+            const height = this.layerHeight;
+            const queue = [{x, y}];
+            const startR = startColor.r, startG = startColor.g, startB = startColor.b;
+    
+            if (startColor.a === 0) return;
+    
+            const seen = new Uint8Array(width * height);
+            seen[y * width + x] = 1;
+    
+            while (queue.length) {
+                const {x, y} = queue.pop();
+                const idx = (y * width + x) * 4;
+    
+                if (idx < 0 || idx + 3 >= data.length) continue;
+    
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
+                const a = data[idx + 3];
+    
+                if (a === 0) continue;
+    
+                const colorMatch = (
+                    Math.abs(r - startR) <= this.tolerance &&
+                    Math.abs(g - startG) <= this.tolerance &&
+                    Math.abs(b - startB) <= this.tolerance
+                );
+    
+                if (!colorMatch) continue;
+    
+                this.selectedPixels.add(`${x},${y}`);
+    
+                const neighbors = [
+                    [x+1, y], [x-1, y], [x, y+1], [x, y-1]
+                ];
+    
+                for (const [nx, ny] of neighbors) {
+                    if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+                    const nIdx = ny * width + nx;
+                    if (seen[nIdx]) continue;
+                    seen[nIdx] = 1;
+                    queue.push({x: nx, y: ny});
+                }
             }
         }
+    
+        _calculateBounds() {
+            if (this.selectedPixels.size === 0) return {minX: 0, minY: 0, maxX: 0, maxY: 0};
+    
+            let minX = Infinity, minY = Infinity;
+            let maxX = -Infinity, maxY = -Infinity;
+    
+            this.selectedPixels.forEach(pixel => {
+                const [x, y] = pixel.split(',').map(Number);
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            });
+    
+            return {minX, minY, maxX, maxY};
+        }
     }
-
-    _calculateBounds() {
-        if (this.selectedPixels.size === 0) return {minX: 0, minY: 0, maxX: 0, maxY: 0};
-
-        let minX = Infinity, minY = Infinity;
-        let maxX = -Infinity, maxY = -Infinity;
-
-        this.selectedPixels.forEach(pixel => {
-            const [x, y] = pixel.split(',').map(Number);
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x);
-            maxY = Math.max(maxY, y);
-        });
-
-        return {minX, minY, maxX, maxY};
-    }
-}
     </script>
     </body>
     </html>
