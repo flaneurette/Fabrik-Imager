@@ -15,15 +15,16 @@ PNG, JPEG, GIF, AVIF. (except for Firefox, which only support PNG blobs)
 Menu:
 
 - Open/save images files. (also: save a selection)
-- Brushes, styles: pencil, round, square, spray, rand.
+- Magic wand
+- Brushes, styles: pencil, round, square, spray, rand. wih dedicated color picker.
 - Drag/Pointer
 - Resize a layer
 - Rectangle
 - Circles
-- Fill/Bucket
+- Flood Fill/Bucket
 - Color picker
 - Zoom +/-
-- Text
+- Text & System Fonts.
 - Eraser
 - Rotate layers (left/right mouse button to rotate direction, snaps into place at certain angles)
 - Canvas resizer
