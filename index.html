@@ -1395,11 +1395,13 @@ _drawPixelOutline(ctx, pixels, layer) {
     }
 
         _deselect() {
-            this.sel = null;
-            this.selCircle = null;
-            this.currentSelection = null;
-            this.magicWandSelection = null;
-            this._render();
+            if(this.tool != 'fill' || this.tool != 'select') {
+                this.sel = null;
+                this.selCircle = null;
+                this.currentSelection = null;
+                this.magicWandSelection = null;
+                this._render();
+            }
         }
         
         _cutSelection() {
@@ -2364,7 +2366,6 @@ _drawPixelOutline(ctx, pixels, layer) {
                 this.tool = btn.dataset.tool;
                 this._stopContinuousRotate();
                 this.rotateActive = false;
-                this._deselect();
                 const cursors = {
                     pointer: 'default', wand: 'crosshair', brush: 'default', select: 'crosshair', selectcircle: 'crosshair',
                     eraser: 'cell', fill: 'crosshair', text: 'text', rotate: 'grab'
