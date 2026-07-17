@@ -364,6 +364,11 @@
     <canvas id="main-canvas" width="1200" height="700"></canvas>
     </div>
     </div>
+    <div id="thumbnail" style="display:block;background-color:#333;margin:10px;padding:10px;color:#888;z-index:9999;border:1px solid #888;position:absolute;right: 300px;top: 100px;width:500px;height:500px;">
+        <div class="canvas-thumbnail-container">
+            <canvas id="thumbnail-canvas" style="width:478px;height:478px;overflow:hidden;"></canvas>
+        </div>
+    </div>
     </div>
 
     <!-- LAYERS PANEL -->
@@ -522,14 +527,6 @@
         </div>
     </div>
 
-
-    <!--
-    <div id="resulting" style="background-color:#333;margin:10px;padding:10px;color:#888;z-index:9999;border:1px dashed #888;position:absolute;right: 300px;top: 100px;width:500px;height:500px;">
-    Click save, then, right click this box and "save as", or click the link.
-    <img src="" id="resultingImage" width="500" />
-    </div>
-    -->
-
     <script>
 
     if (typeof globalThis.ns_setupCallback !== 'function') {
@@ -561,8 +558,10 @@
     class Editor {
         constructor() {
             this.mainCanvas = document.getElementById('main-canvas');
+            this.thumbCanvas = document.getElementById('thumbnail-canvas');
             this.mainCtx    = this.mainCanvas.getContext('2d');
-            
+            this.thumbCtx    = this.thumbCanvas.getContext('2d');
+
             this.layers    = [];
             this.activeIdx = -1;
             this.tool      = 'pointer';
@@ -1004,6 +1003,16 @@
                 
                 this.mainCtx.restore();
             }
+
+            // Update thumbnail
+            this.thumbCtx.drawImage(
+                this.mainCanvas,    // Source canvas
+                0, 0,               // Source x,y
+                this.mainCanvas.width, this.mainCanvas.height,  // Source dimensions
+                0, 0,               // Destination x,y
+                this.thumbCanvas.width, this.thumbCanvas.height  // Destination dimensions
+            );
+
         }
         
         // Draw selection rectangle
@@ -1040,11 +1049,27 @@
 
     _resizeCanvas(w, h) {
         this.saveState();
-        this.mainCanvas.width  = w;
+    
+        // Resize main canvas
+        this.mainCanvas.width = w;
         this.mainCanvas.height = h;
+    
+        // Calculate proportional thumbnail dimensions
+        const maxThumbWidth = 478; // Your desired max thumbnail width
+        const ratio = w / h;
+        const thumbWidth = Math.min(maxThumbWidth, w);
+        const thumbHeight = Math.floor(thumbWidth / ratio);
+    
+        // Update thumbnail dimensions
+        this.thumbCanvas.width = thumbWidth;
+        this.thumbCanvas.height = thumbHeight;
+    
+        // Resize all layers
         this.layers.forEach(l => l.resize(w, h));
-    document.getElementById('statusSize').textContent = `Canvas: ${w} × ${h}`;
-    this._render();
+    
+        document.getElementById('statusSize').textContent = `Canvas: ${w} × ${h}`;
+        this._render();
+        this._updateThumbnail();
     }
 
 
@@ -1394,6 +1419,7 @@
                     this._stopErasing();
                     break;
                 }
+            this._render();
         });
 
         cv.addEventListener('mousemove', e=> {
@@ -1417,7 +1443,6 @@
             this.dragLayer = l;
             this.dragOffX  = x - l.x;
             this.dragOffY  = y - l.y;
-            return;
         }
         
         if (e.button !== 0) return;
@@ -1489,6 +1514,7 @@
         this._startContinuousRotate();
         break;
     }
+    this._render();
     }
     });
 
