@@ -1238,6 +1238,9 @@
     }
 
     _saveSelectionAsImage() {
+
+        this._render();
+
         if (!this.sel || this.sel.w <= 0 || this.sel.h <= 0) {
             alert('No rectangular area selected!');
             return;
@@ -2171,6 +2174,8 @@
     }
 
     _saveFile() {
+
+        this._render();
 
         let quality = parseFloat(document.getElementById('qualitySlider').value) / 100;
         let imageType = document.getElementById('imageType').value;
