@@ -1141,84 +1141,85 @@ _drawPixelOutline(ctx, pixels, layer) {
     }
 
 
-    _floodFill(layer, px, py, color) {
-        // Validate layer exists
-        const layerIndex = this.layers.indexOf(layer);
-        if (layerIndex === -1) {
-            console.error('Flood fill: Invalid layer');
-            return;
-        }
-        
-        this.saveState();
-        
-        // Use the passed layer, not this.activeLayer
-        const ctx = layer.ctx;
-        const W = layer.canvas.width;
-        const H = layer.canvas.height;
-        
-        // Clamp coordinates to canvas bounds
-        px = Math.max(0, Math.min(W - 1, px));
-        py = Math.max(0, Math.min(H - 1, py));
-        
-        const idata = ctx.getImageData(0, 0, W, H);
-        const data = idata.data;
-        
-        // Color conversion
-        const hex2rgb = h => {
-            const v = parseInt(h.replace('#',''), 16);
-            return [(v>>16)&255, (v>>8)&255, v&255];
-        };
-        const [fr, fg, fb] = hex2rgb(color);
-        const fa = 255;
-        
-        // Target pixel check
-        const idx = (py * W + px) * 4;
-        const tr = data[idx], tg = data[idx+1], tb = data[idx+2], ta = data[idx+3];
-        
-        if (tr === fr && tg === fg && tb === fb && ta === fa) return;
-        
-        // Flood fill algorithm
-        const match = i => data[i] === tr && data[i+1] === tg && data[i+2] === tb && data[i+3] === ta;
-        const paint = i => {
-            data[i] = fr;
-            data[i+1] = fg;
-            data[i+2] = fb;
-            data[i+3] = fa;
-        };
-        
-        const stack = [idx];
-        const seen = new Uint8Array(W * H);
-        seen[idx/4] = 1;
-        
-        while (stack.length) {
-            const ci = stack.pop();
-            paint(ci);
-            const pos = ci / 4;
-            const cx = pos % W | 0;
-            const cy = pos / W | 0;
-            
-            const neighbors = [
+_floodFill(layer, px, py, color, tolerance = 30) {
+    const layerIndex = this.layers.indexOf(layer);
+    if (layerIndex === -1) {
+        console.error('Flood fill: Invalid layer');
+        return;
+    }
+
+    this.saveState();
+
+    const ctx = layer.ctx;
+    const W = layer.canvas.width;
+    const H = layer.canvas.height;
+
+    px = Math.max(0, Math.min(W - 1, px));
+    py = Math.max(0, Math.min(H - 1, py));
+
+    const idata = ctx.getImageData(0, 0, W, H);
+    const data = idata.data;
+
+    const hex2rgb = h => {
+        const v = parseInt(h.replace('#',''), 16);
+        return [(v>>16)&255, (v>>8)&255, v&255];
+    };
+    const [fr, fg, fb] = hex2rgb(color);
+    const fa = 255;
+
+    const idx = (py * W + px) * 4;
+    const tr = data[idx], tg = data[idx+1], tb = data[idx+2], ta = data[idx+3];
+
+    if (tr === fr && tg === fg && tb === fb && ta === fa) return;
+
+    // Tolerance-based match instead of strict equality
+    const match = i => {
+        return Math.abs(data[i]   - tr) <= tolerance &&
+               Math.abs(data[i+1] - tg) <= tolerance &&
+               Math.abs(data[i+2] - tb) <= tolerance &&
+               Math.abs(data[i+3] - ta) <= tolerance;
+    };
+
+    const paint = i => {
+        data[i] = fr;
+        data[i+1] = fg;
+        data[i+2] = fb;
+        data[i+3] = fa;
+    };
+
+    const stack = [idx];
+    const seen = new Uint8Array(W * H);
+    seen[idx/4] = 1;
+
+    while (stack.length) {
+        const ci = stack.pop();
+        paint(ci);
+        const pos = ci / 4;
+        const cx = pos % W | 0;
+        const cy = pos / W | 0;
+
+        const neighbors = [
             cx > 0   ? [cx-1, cy] : null,
             cx < W-1 ? [cx+1, cy] : null,
             cy > 0   ? [cx, cy-1] : null,
             cy < H-1 ? [cx, cy+1] : null
-            ];
-            
-            for (const n of neighbors) {
-                if (!n) continue;
-                const ni = n[1] * W + n[0];
-                if (seen[ni]) continue;
-                seen[ni] = 1;
-                const pi = ni * 4;
-                if (match(pi)) stack.push(pi);
-            }
+        ];
+
+        for (const n of neighbors) {
+            if (!n) continue;
+            const ni = n[1] * W + n[0];
+            if (seen[ni]) continue;
+            seen[ni] = 1;
+            const pi = ni * 4;
+            if (match(pi)) stack.push(pi);
         }
-        
-        ctx.putImageData(idata, 0, 0);
-        this.sel = null;
-        this.selCircle = null;
-        this._render();
     }
+
+    ctx.putImageData(idata, 0, 0);
+    this.sel = null;
+    this.selCircle = null;
+    this._render();
+}
 
     _handleFill(x, y) {
         const l = this.activeLayer;
