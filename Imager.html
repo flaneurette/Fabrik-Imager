@@ -364,9 +364,9 @@
     <canvas id="main-canvas" width="1200" height="700"></canvas>
     </div>
     </div>
-    <div id="thumbnail" style="display:block;background-color:#333;margin:10px;padding:10px;color:#888;z-index:9999;border:1px solid #888;position:absolute;right: 300px;top: 100px;width:250px;height:250px;">
+    <div id="thumbnail-box" style="display:block;background-color:#333;margin:10px;padding:10px;color:#888;z-index:9999;border:1px solid #888;position:absolute;right: 300px;top: 100px;max-width:600px;">
         <div class="canvas-thumbnail-container">
-            <canvas id="thumbnail-canvas" style="width:225px;height:225px;overflow:hidden;"></canvas>
+            <canvas id="thumbnail-canvas"></canvas>
         </div>
     </div>
     </div>
@@ -1013,6 +1013,11 @@
                 this.thumbCanvas.width, this.thumbCanvas.height  // Destination dimensions
             );
 
+        document.getElementById('thumbnail-box').style.height =this.mainCanvas.height /5; 
+        document.getElementById('thumbnail-box').style.width = this.mainCanvas.width /5; 
+
+        document.getElementById('thumbnail-canvas').style.width = this.mainCanvas.width /5; 
+        document.getElementById('thumbnail-canvas').style.height = this.mainCanvas.height / 5;
         }
         
         // Draw selection rectangle
@@ -1055,11 +1060,11 @@
         this.mainCanvas.height = h;
     
         // Calculate proportional thumbnail dimensions
-        const maxThumbWidth = 478; // Your desired max thumbnail width
+        const maxThumbWidth = 600; // Your desired max thumbnail width
         const ratio = w / h;
         const thumbWidth = Math.min(maxThumbWidth, w);
-        const thumbHeight = Math.floor(thumbWidth / ratio);
-    
+        const thumbHeight = Math.floor(thumbWidth / ratio); 
+
         // Update thumbnail dimensions
         this.thumbCanvas.width = thumbWidth;
         this.thumbCanvas.height = thumbHeight;
@@ -1069,7 +1074,11 @@
     
         document.getElementById('statusSize').textContent = `Canvas: ${w} × ${h}`;
         this._render();
-        this._updateThumbnail();
+        document.getElementById('thumbnail-box').style.height =thumbWidth /5; 
+        document.getElementById('thumbnail-box').style.width = thumbWidth /5; 
+
+        document.getElementById('thumbnail-canvas').style.width = thumbWidth /5; 
+        document.getElementById('thumbnail-canvas').style.height = thumbHeight / 5;
     }
 
 
