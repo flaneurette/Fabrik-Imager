@@ -661,6 +661,7 @@
 
     handleMagicWandClick(x, y) {
         this.currentSelection = this.magicWand.select(x, y);
+        this.magicWandSelection = this.magicWand.select(x, y);
         this._render();
     }
 
@@ -1141,85 +1142,85 @@ _drawPixelOutline(ctx, pixels, layer) {
     }
 
 
-_floodFill(layer, px, py, color, tolerance = 30) {
-    const layerIndex = this.layers.indexOf(layer);
-    if (layerIndex === -1) {
-        console.error('Flood fill: Invalid layer');
-        return;
-    }
-
-    this.saveState();
-
-    const ctx = layer.ctx;
-    const W = layer.canvas.width;
-    const H = layer.canvas.height;
-
-    px = Math.max(0, Math.min(W - 1, px));
-    py = Math.max(0, Math.min(H - 1, py));
-
-    const idata = ctx.getImageData(0, 0, W, H);
-    const data = idata.data;
-
-    const hex2rgb = h => {
-        const v = parseInt(h.replace('#',''), 16);
-        return [(v>>16)&255, (v>>8)&255, v&255];
-    };
-    const [fr, fg, fb] = hex2rgb(color);
-    const fa = 255;
-
-    const idx = (py * W + px) * 4;
-    const tr = data[idx], tg = data[idx+1], tb = data[idx+2], ta = data[idx+3];
-
-    if (tr === fr && tg === fg && tb === fb && ta === fa) return;
-
-    // Tolerance-based match instead of strict equality
-    const match = i => {
-        return Math.abs(data[i]   - tr) <= tolerance &&
-               Math.abs(data[i+1] - tg) <= tolerance &&
-               Math.abs(data[i+2] - tb) <= tolerance &&
-               Math.abs(data[i+3] - ta) <= tolerance;
-    };
-
-    const paint = i => {
-        data[i] = fr;
-        data[i+1] = fg;
-        data[i+2] = fb;
-        data[i+3] = fa;
-    };
-
-    const stack = [idx];
-    const seen = new Uint8Array(W * H);
-    seen[idx/4] = 1;
-
-    while (stack.length) {
-        const ci = stack.pop();
-        paint(ci);
-        const pos = ci / 4;
-        const cx = pos % W | 0;
-        const cy = pos / W | 0;
-
-        const neighbors = [
-            cx > 0   ? [cx-1, cy] : null,
-            cx < W-1 ? [cx+1, cy] : null,
-            cy > 0   ? [cx, cy-1] : null,
-            cy < H-1 ? [cx, cy+1] : null
-        ];
-
-        for (const n of neighbors) {
-            if (!n) continue;
-            const ni = n[1] * W + n[0];
-            if (seen[ni]) continue;
-            seen[ni] = 1;
-            const pi = ni * 4;
-            if (match(pi)) stack.push(pi);
+    _floodFill(layer, px, py, color, tolerance = 30) {
+        const layerIndex = this.layers.indexOf(layer);
+        if (layerIndex === -1) {
+            console.error('Flood fill: Invalid layer');
+            return;
         }
+    
+        this.saveState();
+    
+        const ctx = layer.ctx;
+        const W = layer.canvas.width;
+        const H = layer.canvas.height;
+    
+        px = Math.max(0, Math.min(W - 1, px));
+        py = Math.max(0, Math.min(H - 1, py));
+    
+        const idata = ctx.getImageData(0, 0, W, H);
+        const data = idata.data;
+    
+        const hex2rgb = h => {
+            const v = parseInt(h.replace('#',''), 16);
+            return [(v>>16)&255, (v>>8)&255, v&255];
+        };
+        const [fr, fg, fb] = hex2rgb(color);
+        const fa = 255;
+    
+        const idx = (py * W + px) * 4;
+        const tr = data[idx], tg = data[idx+1], tb = data[idx+2], ta = data[idx+3];
+    
+        if (tr === fr && tg === fg && tb === fb && ta === fa) return;
+    
+        // Tolerance-based match instead of strict equality
+        const match = i => {
+            return Math.abs(data[i]   - tr) <= tolerance &&
+                   Math.abs(data[i+1] - tg) <= tolerance &&
+                   Math.abs(data[i+2] - tb) <= tolerance &&
+                   Math.abs(data[i+3] - ta) <= tolerance;
+        };
+    
+        const paint = i => {
+            data[i] = fr;
+            data[i+1] = fg;
+            data[i+2] = fb;
+            data[i+3] = fa;
+        };
+    
+        const stack = [idx];
+        const seen = new Uint8Array(W * H);
+        seen[idx/4] = 1;
+    
+        while (stack.length) {
+            const ci = stack.pop();
+            paint(ci);
+            const pos = ci / 4;
+            const cx = pos % W | 0;
+            const cy = pos / W | 0;
+    
+            const neighbors = [
+                cx > 0   ? [cx-1, cy] : null,
+                cx < W-1 ? [cx+1, cy] : null,
+                cy > 0   ? [cx, cy-1] : null,
+                cy < H-1 ? [cx, cy+1] : null
+            ];
+    
+            for (const n of neighbors) {
+                if (!n) continue;
+                const ni = n[1] * W + n[0];
+                if (seen[ni]) continue;
+                seen[ni] = 1;
+                const pi = ni * 4;
+                if (match(pi)) stack.push(pi);
+            }
+        }
+    
+        ctx.putImageData(idata, 0, 0);
+        this.sel = null;
+        this.selCircle = null;
+        this._deselect()
     }
-
-    ctx.putImageData(idata, 0, 0);
-    this.sel = null;
-    this.selCircle = null;
-    this._render();
-}
 
     _handleFill(x, y) {
         const l = this.activeLayer;
@@ -1273,29 +1274,51 @@ _floodFill(layer, px, py, color, tolerance = 30) {
         
         _copySelection() {
             const l = this.activeLayer; if (!l) return;
-            
+        
             if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
-            const {cx, cy, rx, ry} = this.selCircle;
-            const bx = Math.floor(cx - rx), by = Math.floor(cy - ry);
-            const bw = Math.ceil(rx * 2),   bh = Math.ceil(ry * 2);
-            const tmp = document.createElement('canvas');
-            tmp.width = bw; tmp.height = bh;
-            const tc = tmp.getContext('2d');
-            tc.save();
-            tc.beginPath();
-            tc.ellipse(rx, ry, rx, ry, 0, 0, Math.PI * 2);
-            tc.clip();
-            tc.drawImage(l.canvas, -bx, -by);
-            tc.restore();
-        this.clipboard = { type: 'canvas', canvas: tmp };
-        } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
-            this.clipboard = {
-                type: 'imagedata',
-                data: l.ctx.getImageData(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h),
-                w: this.sel.w, h: this.sel.h
-            };
+                // ... existing ellipse code
+            } else if (this.magicWandSelection) {
+                const { x, y, width, height, layerX, layerY } = this.magicWandSelection;
+                
+                const tmp = document.createElement('canvas');
+                tmp.width = width;
+                tmp.height = height;
+                const tc = tmp.getContext('2d');
+                
+                // Draw the full bounding box first
+                tc.drawImage(l.canvas, layerX, layerY, width, height, 0, 0, width, height);
+                
+                // Create mask from selectedPixels and apply it
+                const maskData = tc.createImageData(width, height);
+                const maskPixels = maskData.data;
+                
+                // Mark all pixels transparent except selected ones
+                for (let i = 0; i < maskPixels.length; i += 4) {
+                    maskPixels[i + 3] = 0; // fully transparent by default
+                }
+                
+                this.magicWandSelection.pixels.forEach(pixelKey => {
+                    const [px, py] = pixelKey.split(',').map(Number);
+                    const idx = ((py - layerY) * width + (px - layerX)) * 4;
+                    if (idx >= 0 && idx < maskPixels.length) {
+                        maskPixels[idx + 3] = 255; // opaque for selected pixels
+                    }
+                });
+                
+                tc.putImageData(maskData, 0, 0);
+                
+                this.clipboard = { 
+                    type: 'canvas', 
+                    canvas: tmp, 
+                    x: x,
+                    y: y,
+                    worldX: x,
+                    worldY: y
+                };
+            } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+                // ... existing rect code
+            }
         }
-    }
 
     _saveSelectionAsImage() {
 
@@ -1349,26 +1372,45 @@ _floodFill(layer, px, py, color, tolerance = 30) {
         this.saveState();
         if (!this.clipboard) return;
         const nl = this._addLayer('Pasted');
+    
         if (this.clipboard.type === 'canvas') {
             nl.canvas.width  = this.clipboard.canvas.width;
             nl.canvas.height = this.clipboard.canvas.height;
             nl.ctx = nl.canvas.getContext('2d');
             nl.ctx.drawImage(this.clipboard.canvas, 0, 0);
-            } else {
-                nl.ctx.putImageData(this.clipboard.data, 0, 0);
-            }
+            // position the layer where it was copied from
+            nl.x = this.clipboard.worldX;
+            nl.y = this.clipboard.worldY;
+        } else {
+            nl.canvas.width  = this.clipboard.w;
+            nl.canvas.height = this.clipboard.h;
+            nl.ctx = nl.canvas.getContext('2d');
+            nl.ctx.putImageData(this.clipboard.data, 0, 0);
+            nl.x = this.clipboard.worldX;
+            nl.y = this.clipboard.worldY;
+        }
+        this._render();
+    }
+
+        _deselect() {
+            this.sel = null;
+            this.selCircle = null;
+            this.currentSelection = null;
+            this.magicWandSelection = null;
             this._render();
         }
         
         _cutSelection() {
+            console.log('CUT called. sel:', this.sel, 'selCircle:', this.selCircle, 'activeLayer:', this.activeLayer?.name);
             this.saveState();
-            const l = this.activeLayer; if (!l) return;
+            const l = this.activeLayer; if (!l) { console.log('no active layer'); return; }
             this._copySelection();
-            
+            console.log('clipboard after copy:', this.clipboard);
+        
             if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
+                console.log('cutting ellipse');
                 const {cx, cy, rx, ry} = this.selCircle;
                 l.ctx.save();
-                // Clear only inside the ellipse
                 l.ctx.globalCompositeOperation = 'destination-out';
                 l.ctx.beginPath();
                 l.ctx.ellipse(cx - l.x, cy - l.y, rx, ry, 0, 0, Math.PI * 2);
@@ -1376,12 +1418,32 @@ _floodFill(layer, px, py, color, tolerance = 30) {
                 l.ctx.restore();
                 this.selCircle = null;
             } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+                console.log('cutting rect');
                 l.ctx.clearRect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
                 this.sel = null;
+            } else if (this.magicWandSelection) {
+                const { x, y, layerX, layerY, width, height } = this.magicWandSelection;
+                const imageData = l.ctx.getImageData(layerX, layerY, width, height);
+                const data = imageData.data;
+                
+                // Clear only the selected pixels
+                this.magicWandSelection.pixels.forEach(pixelKey => {
+                    const [px, py] = pixelKey.split(',').map(Number);
+                    const idx = ((py - layerY) * width + (px - layerX)) * 4;
+                    if (idx >= 0 && idx < data.length) {
+                        data[idx + 3] = 0; // set alpha to 0 (transparent)
+                    }
+                });
+                
+                l.ctx.putImageData(imageData, layerX, layerY);
+                this.magicWandSelection = null;
+            } else {
+                console.log('NEITHER selection matched — nothing cut');
             }
-            this._render();
+
+            this._deselect();
         }
-        
+
         _mergeLayers() {
             this.saveState();
             const w = this.mainCanvas.width;
@@ -1492,7 +1554,7 @@ _floodFill(layer, px, py, color, tolerance = 30) {
             
                 // Make selection
                 const selection = this.magicWand.select(canvasX, canvasY);
-            
+                 this.magicWandSelection = this.magicWand.select(canvasX, canvasY);
                 if (selection && selection.width > 0 && selection.height > 0) {
                     this.currentSelection = selection;
                     this._render();
@@ -2300,7 +2362,7 @@ _floodFill(layer, px, py, color, tolerance = 30) {
                 this.tool = btn.dataset.tool;
                 this._stopContinuousRotate();
                 this.rotateActive = false;
-                
+                this._deselect();
                 const cursors = {
                     pointer: 'default', wand: 'crosshair', brush: 'default', select: 'crosshair', selectcircle: 'crosshair',
                     eraser: 'cell', fill: 'crosshair', text: 'text', rotate: 'grab'
