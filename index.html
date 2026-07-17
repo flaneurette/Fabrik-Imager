@@ -1014,6 +1014,7 @@
                 this.mainCtx.restore();
             }
 
+            this.thumbCtx.clearRect(0, 0, this.mainCanvas.width, this.mainCanvas.height);
             // Update thumbnail
             this.thumbCtx.drawImage(
                 this.mainCanvas,    // Source canvas
@@ -1022,6 +1023,7 @@
                 0, 0,               // Destination x,y
                 this.thumbCanvas.width, this.thumbCanvas.height  // Destination dimensions
             );
+
 
         document.getElementById('thumbnail-box').style.height =this.mainCanvas.height /5; 
         document.getElementById('thumbnail-box').style.width = this.mainCanvas.width /5; 
