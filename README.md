@@ -25,7 +25,7 @@ Menu:
 - Flood Fill/Bucket
 - Color picker
 - Zoom +/-
-- Text & System Fonts.
+- Text & System Fonts
 - Eraser
 - Rotate layers (left/right mouse button to rotate direction, snaps into place at certain angles)
 - Canvas resizer
@@ -35,6 +35,7 @@ Menu:
 Right menu:
 
 Layers
+
 - Add layer
 - Delete layer
 - Merge layers
