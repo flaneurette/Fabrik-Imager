@@ -2,6 +2,8 @@
 
 <img src="Screenshot.png" />
 
+[![Try it live](https://img.shields.io/badge/Try%20it-Live-brightgreen)](https://flaneurette.github.io/Fabrik-Imager/)
+
 A minimalist graphic photo editor to edit and create images. Not the same as Gimp, Photoshop, Photopea, Canva or Paint, but rather unique as it has limited, but creative! functions.
 
 2800+ line code, makes it very portable. All images are exported with quality control, and are streamed as a blob to download. No server-side technology needed.
