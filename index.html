@@ -365,10 +365,8 @@
     <canvas id="main-canvas" width="1200" height="700"></canvas>
     </div>
     </div>
-    <div id="thumbnail-box" style="display:block;background-color:#333;margin:10px;padding:10px;color:#888;z-index:9999;border:1px solid #888;position:absolute;right: 300px;top: 100px;max-width:600px;">
-        <div class="canvas-thumbnail-container">
-            <canvas id="thumbnail-canvas"></canvas>
-        </div>
+    <div id="thumbnail-box" style="display:block;z-index:9999;border:0px solid #ff0;position:absolute;right: 300px;top: 100px;max-width:600px;">
+            <canvas id="thumbnail-canvas" style="margin:0px;padding:0px;"></canvas>
     </div>
     </div>
 
@@ -1014,7 +1012,9 @@
                 this.mainCtx.restore();
             }
 
-            this.thumbCtx.clearRect(0, 0, this.mainCanvas.width, this.mainCanvas.height);
+            this.thumbCtx.clearRect(0, 0, this.thumbCanvas.width, this.thumbCanvas.height);
+            this.thumbCtx.fillStyle = '#ff0';
+            this.thumbCtx.fillRect(0, 0, this.thumbCanvas.width, this.thumbCanvas.height);
             // Update thumbnail
             this.thumbCtx.drawImage(
                 this.mainCanvas,    // Source canvas
@@ -1029,7 +1029,7 @@
         document.getElementById('thumbnail-box').style.width = this.mainCanvas.width /5; 
 
         document.getElementById('thumbnail-canvas').style.width = this.mainCanvas.width /5; 
-        document.getElementById('thumbnail-canvas').style.height = this.mainCanvas.height / 5;
+        document.getElementById('thumbnail-canvas').style.height = ((this.mainCanvas.height / 5) - 5);
         }
         
         // Draw selection rectangle
@@ -1140,7 +1140,7 @@ _drawPixelOutline(ctx, pixels, layer) {
         document.getElementById('thumbnail-box').style.width = thumbWidth /5; 
 
         document.getElementById('thumbnail-canvas').style.width = thumbWidth /5; 
-        document.getElementById('thumbnail-canvas').style.height = thumbHeight / 5;
+        document.getElementById('thumbnail-canvas').style.height = ((this.mainCanvas.height / 5) - 5);
     }
 
 
