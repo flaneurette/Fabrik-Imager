@@ -96,6 +96,7 @@
     .toolbar-sep { width: 1px; height: 28px; background: #555; margin: 0 4px; }
     .color-picker { width: 31px; height: 34px; border: none; cursor: pointer; background: none; }
     #inputW, #inputH, .quality-slider { background: #000; color: #fff; width: 45px; cursor: pointer; padding:5px; border: 0px solid black; }
+    #presetSize { background: #000; color: #fff; cursor: pointer; padding:5px; border: 0px solid black; }
     .quality-value { color: #333; font-size: 12px; min-width: 15px; }
     .tb-btn {
         padding: 5px 10px; background: #333; color: #fff;
@@ -359,6 +360,46 @@
     <span>×</span>
     <input type="text" id="inputH" value="700"  min="1" max="8000">
     <span>px</span>
+    <select id="presetSize" title="Preset canvas sizes">
+        <option value="">Preset...</option>
+        <optgroup label="Common">
+            <option value="640x480">640 × 480 (VGA)</option>
+            <option value="800x600">800 × 600 (SVGA)</option>
+            <option value="1024x768">1024 × 768 (XGA)</option>
+            <option value="1280x720">1280 × 720 (HD)</option>
+            <option value="1280x800">1280 × 800 (WXGA)</option>
+            <option value="1366x768">1366 × 768</option>
+            <option value="1440x900">1440 × 900</option>
+            <option value="1600x900">1600 × 900</option>
+            <option value="1920x1080">1920 × 1080 (Full HD)</option>
+            <option value="2560x1440">2560 × 1440 (QHD)</option>
+            <option value="3840x2160">3840 × 2160 (4K UHD)</option>
+        </optgroup>
+        <optgroup label="Square / Social">
+            <option value="1080x1080">1080 × 1080 (Instagram Post)</option>
+            <option value="1080x1350">1080 × 1350 (Instagram Portrait)</option>
+            <option value="1080x1920">1080 × 1920 (Story / Reel)</option>
+            <option value="1200x630">1200 × 630 (FB/Bluesky Link)</option>
+            <option value="1500x500">1500 × 500 (Bluesky Header)</option>
+            <option value="820x312">820 × 312 (FB Cover)</option>
+            <option value="500x500">500 × 500</option>
+            <option value="1400x1400">1400 × 1400 (Bandcamp Art)</option>
+            <option value="1600x1600">1600 × 1600 (Bandcamp Art)</option>
+        </optgroup>
+        <optgroup label="Print (300dpi)">
+            <option value="2550x3300">2550 × 3300 (Letter)</option>
+            <option value="2480x3508">2480 × 3508 (A4)</option>
+            <option value="3600x2400">3600 × 2400 (12×8in)</option>
+        </optgroup>
+        <optgroup label="Small / Icons">
+            <option value="16x16">16 × 16</option>
+            <option value="32x32">32 × 32</option>
+            <option value="64x64">64 × 64</option>
+            <option value="128x128">128 × 128</option>
+            <option value="256x256">256 × 256</option>
+            <option value="512x512">512 × 512</option>
+        </optgroup>
+    </select>
     <button id="btnResize">Apply</button>
     </div>
     <div class="canvas-scroll" id="canvasScroll">
@@ -2506,6 +2547,14 @@ _drawPixelOutline(ctx, pixels, layer) {
             const w = parseInt(document.getElementById('inputW').value);
             const h = parseInt(document.getElementById('inputH').value);
             if (w > 0 && h > 0) this._resizeCanvas(w, h);
+        });
+
+        document.getElementById('presetSize').addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (!val) return;
+            const [w, h] = val.split('x').map(Number);
+            document.getElementById('inputW').value = w;
+            document.getElementById('inputH').value = h;
         });
         
         document.getElementById('btnDupLayer').addEventListener('click', () => {
