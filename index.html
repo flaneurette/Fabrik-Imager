@@ -253,6 +253,7 @@
     <div class="toolbar">
     <div>F /\ B R I K.</div>
     <button class="tb-btn" id="btnOpen"  title="Open PNG (Ctrl+O)">Open</button>
+    <button class="tb-btn" id="btnImport" title="Import image as layer (does not resize canvas)">Import</button>
     <button class="tb-btn" id="btnSave"  title="Save PNG (Ctrl+S)">Save</button>
     <button class="tb-btn" id="btnSaveSel">Save selection</button>
     <div class="toolbar-sep"></div>
@@ -2308,8 +2309,29 @@ _drawPixelOutline(ctx, pixels, layer) {
             const url  = URL.createObjectURL(file);
             const img  = new Image();
             img.onload = () => {
+                // Resize the canvas to match the opened image
+                this._resizeCanvas(img.width, img.height);
                 const nl = this._addLayer(file.name);
-                // Set canvas dimensions to match image
+                nl.ctx.drawImage(img, 0, 0);
+                URL.revokeObjectURL(url);
+                this._render();
+            };
+            img.src = url;
+        };
+        inp.click();
+    }
+
+    _importFile() {
+        const inp = document.createElement('input');
+        inp.type   = 'file';
+        inp.accept = 'image/png,image/*';
+        inp.onchange = () => {
+            const file = inp.files[0]; if (!file) return;
+            const url  = URL.createObjectURL(file);
+            const img  = new Image();
+            img.onload = () => {
+                // Import as a new layer WITHOUT resizing the canvas
+                const nl = this._addLayer(file.name);
                 nl.canvas.width = img.width;
                 nl.canvas.height = img.height;
                 nl.ctx.drawImage(img, 0, 0);
@@ -2478,6 +2500,7 @@ _drawPixelOutline(ctx, pixels, layer) {
 
     _bindUI() {
         document.getElementById('btnOpen').addEventListener('click', () => this._openFile());
+    document.getElementById('btnImport').addEventListener('click', () => this._importFile());
         
         document.getElementById('btnResize').addEventListener('click', () => {
             const w = parseInt(document.getElementById('inputW').value);
