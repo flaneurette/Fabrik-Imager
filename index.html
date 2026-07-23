@@ -157,9 +157,22 @@
     .layers-panel-header span { font-size: 10px; color: #777; font-weight: normal; }
     .layers-list { flex: 1; overflow-y: auto; }
     .layer-item {
-        display: flex; align-items: center; gap: 6px;
+        display: flex; flex-direction: column; gap: 4px;
         padding: 7px 8px; border-bottom: 1px solid #2a2a2a;
         cursor: pointer; color: #ccc; font-size: 13px;
+    }
+    .layer-item-row {
+        display: flex; align-items: center; gap: 6px;
+    }
+    .layer-opacity-row {
+        display: flex; align-items: center; gap: 6px;
+        padding-left: 20px;
+    }
+    .layer-opacity-slider {
+        flex: 1; cursor: pointer; accent-color: #00cc58;
+    }
+    .layer-opacity-value {
+        font-size: 11px; color: #999; min-width: 32px; text-align: right; flex-shrink: 0;
     }
     .layer-item:hover { background: #3d3d3d; }
     .layer-item.active { background: #0078d7; color: #fff; }
@@ -311,6 +324,7 @@
     <button class="tb-btn" id="btnResizeLayer" title="Resize active layer">Resize L</button>
     <select class="tb-btn" id="effects"  title="Effects">
         <option value="" class="option-sep">Layer effect</option>
+        <option value="fliph">Flip Horizontal</option>
         <option value="blur">Blur</option>
         <option value="dropshadow">Drop shadow</option>
         <option value="brightness">Brightness</option>
@@ -578,6 +592,7 @@
         constructor(w, h, name) {
             this.name    = name || 'Layer';
             this.visible = true;
+            this.opacity = 1;
             this.x       = 0;
             this.y       = 0;
             this.rotation = 0; // radians
@@ -907,6 +922,10 @@
         //item.classList.add('active');
     }
 
+    // Top row (visibility, name, move, delete)
+    const topRow = document.createElement('div');
+    topRow.className = 'layer-item-row';
+
     // Visibility toggle
     const visToggle = document.createElement('span');
     visToggle.className = `visibility ${layer.visible ? 'visible' : 'hidden'}`;
@@ -951,11 +970,40 @@
         this._deleteLayer(idx);
     };
 
-    item.appendChild(visToggle);
-    item.appendChild(nameSpan);
-    item.appendChild(moveUp);
-    item.appendChild(moveDown);
-    item.appendChild(deleteBtn);
+    topRow.appendChild(visToggle);
+    topRow.appendChild(nameSpan);
+    topRow.appendChild(moveUp);
+    topRow.appendChild(moveDown);
+    topRow.appendChild(deleteBtn);
+
+    // Opacity row (slider underneath)
+    const opacityRow = document.createElement('div');
+    opacityRow.className = 'layer-opacity-row';
+
+    const opacityLabel = document.createElement('span');
+    opacityLabel.className = 'layer-opacity-value';
+    const pct = Math.round((layer.opacity ?? 1) * 100);
+    opacityLabel.textContent = `${pct}%`;
+
+    const opacitySlider = document.createElement('input');
+    opacitySlider.type = 'range';
+    opacitySlider.className = 'layer-opacity-slider';
+    opacitySlider.min = 0;
+    opacitySlider.max = 100;
+    opacitySlider.value = pct;
+    opacitySlider.title = 'Layer opacity';
+    opacitySlider.onmousedown = (e) => e.stopPropagation();
+    opacitySlider.oninput = (e) => {
+        layer.opacity = parseInt(e.target.value, 10) / 100;
+        opacityLabel.textContent = `${e.target.value}%`;
+        this._render();
+    };
+
+    opacityRow.appendChild(opacitySlider);
+    opacityRow.appendChild(opacityLabel);
+
+    item.appendChild(topRow);
+    item.appendChild(opacityRow);
     list.appendChild(item);
     });
     }
@@ -1047,6 +1095,7 @@
                 if (layer.rotation) {
                     this.mainCtx.rotate(layer.rotation);
                 }
+                this.mainCtx.globalAlpha = (layer.opacity ?? 1);
                 
                 // Draw the layer
                 this.mainCtx.drawImage(layer.canvas, 0, 0);
@@ -1873,6 +1922,9 @@ _drawPixelOutline(ctx, pixels, layer) {
         const effect = document.getElementById('effects').value.trim();
         const layer = this.activeLayer;
         switch(effect) {
+            case 'fliph':
+            this._flipHorizontal(layer);
+            break;
             case 'blur':
             this._blur(layer,5);
             break;
@@ -1966,6 +2018,14 @@ _drawPixelOutline(ctx, pixels, layer) {
     }
 
     // EFFECTS ---------------------------------------------------------
+
+    _flipHorizontal(l) {
+        l.ctx.save();
+        l.ctx.translate(l.canvas.width, 0);
+        l.ctx.scale(-1, 1);
+        l.ctx.drawImage(l.canvas, 0, 0);
+        l.ctx.restore();
+    }
 
     _minimalEffect(method, l, param = 180) {
         l.ctx.save();
