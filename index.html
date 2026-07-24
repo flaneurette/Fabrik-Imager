@@ -325,6 +325,7 @@
     <select class="tb-btn" id="effects"  title="Effects">
         <option value="" class="option-sep">Layer effect</option>
         <option value="fliph">Flip Horizontal</option>
+        <option value="filllayer">Fill Layer</option>
         <option value="blur">Blur</option>
         <option value="dropshadow">Drop shadow</option>
         <option value="brightness">Brightness</option>
@@ -735,8 +736,9 @@
     
         // Scale factor to make shapes ~500px
         const scale = 25; // Adjust this value to change size
-        const x = 500; // Use mouse position
-        const y = 300;
+        const layer = this.activeLayer;
+        const x = 500 - layer.x; // Use mouse position
+        const y = 300 - layer.y;
     
         ctx.beginPath();
         template.forEach((point, i) => {
@@ -759,7 +761,8 @@
         this.saveState();
         this.isDrawing = true;
         this.tool = 'brush';
-        this.lastPos = { x, y };
+        const layer = this.activeLayer;
+        this.lastPos = layer ? { x: x - layer.x, y: y - layer.y } : { x, y };
         this.draw(e);
     }
     
@@ -767,8 +770,11 @@
         if (!this.isDrawing) return;
         e.preventDefault(); // Prevent scrolling on touch devices
         this.tool = 'brush';
-        const ctx = this.activeLayer.ctx;
-        const { x, y } = this._canvasXY(e);
+        const layer = this.activeLayer;
+        if (!layer) return;
+        const ctx = layer.ctx;
+        const { x: cx, y: cy } = this._canvasXY(e);
+        const x = cx - layer.x, y = cy - layer.y;
         let brushType = document.getElementById('brushtype').value || 1;
         let brushColor = document.getElementById('brushcolor').value || '#000000'; 
         let brushSize = document.getElementById('brushsize').value || 1; // Default brush size
@@ -884,19 +890,9 @@
         this._render();
     }
 
+    // "Up" moves a layer toward the top of the stack (rendered last / on top),
+    // which is the higher index in this.layers.
     _moveLayerUp(idx) {
-        if (idx > 0) {
-            this.saveState();
-            const layer = this.layers[idx];
-            this.layers.splice(idx, 1);
-            this.layers.splice(idx - 1, 0, layer);
-            this.activeIdx = idx - 1;
-            this._refreshLayersPanel();
-            this._render();
-        }
-    }
-
-    _moveLayerDown(idx) {
         if (idx < this.layers.length - 1) {
             this.saveState();
             const layer = this.layers[idx];
@@ -908,19 +904,42 @@
         }
     }
 
+    // "Down" moves a layer toward the bottom of the stack (rendered first),
+    // which is the lower index in this.layers.
+    _moveLayerDown(idx) {
+        if (idx > 0) {
+            this.saveState();
+            const layer = this.layers[idx];
+            this.layers.splice(idx, 1);
+            this.layers.splice(idx - 1, 0, layer);
+            this.activeIdx = idx - 1;
+            this._refreshLayersPanel();
+            this._render();
+        }
+    }
+
     _refreshLayersPanel() {
         const list = document.getElementById('layersList');
         list.innerHTML = '';
         
-        this.layers.forEach((layer, idx) => {
+        // Display the top-most layer (highest index, drawn last / on top) first,
+        // so the panel's visual order matches the on-canvas stacking order.
+        for (let idx = this.layers.length - 1; idx >= 0; idx--) {
+        const layer = this.layers[idx];
         const item = document.createElement('div');
         item.className = 'layer-item';
         item.title = `Layer: ${layer.name}\nPosition: (${layer.x}, ${layer.y})`;
-        item.id = idx;
+        item.dataset.idx = idx;
 
     if (idx === this.activeIdx) {
-        //item.classList.add('active');
+        item.classList.add('active');
     }
+
+    // Clicking anywhere on the row selects the layer (not just the name text).
+    item.addEventListener('click', () => {
+        this.activeIdx = idx;
+        this._refreshLayersPanel();
+    });
 
     // Top row (visibility, name, move, delete)
     const topRow = document.createElement('div');
@@ -929,9 +948,9 @@
     // Visibility toggle
     const visToggle = document.createElement('span');
     visToggle.className = `visibility ${layer.visible ? 'visible' : 'hidden'}`;
-    visToggle.onclick = () => {
+    visToggle.onclick = (e) => {
+        e.stopPropagation();
         layer.visible = !layer.visible;
-        //this._refreshLayersPanel();
         this._render();
     };
 
@@ -939,10 +958,6 @@
     const nameSpan = document.createElement('span');
     nameSpan.className = 'layer-name';
     nameSpan.textContent = layer.name;
-    nameSpan.onclick = () => {
-        this.activeIdx = idx;
-        //this._refreshLayersPanel();
-    };
 
     // Move buttons
     const moveUp = document.createElement('button');
@@ -1005,33 +1020,36 @@
     item.appendChild(topRow);
     item.appendChild(opacityRow);
     list.appendChild(item);
-    });
+    }
     }
 
     _bindLayerEvents() {
     
         const list = document.getElementById('layersList');
         let dragIdx = -1;
+        let dragItem = null;
         let startY = 0;
         
         list.addEventListener('mousedown', e => {
         
-            if (e.target.classList.contains('layer-item')) {
-                const idx = Array.from(list.children).indexOf(e.target);
-                if (idx !== -1) {
+            const item = e.target.closest('.layer-item');
+            if (item) {
+                const idx = parseInt(item.dataset.idx, 10);
+                if (!Number.isNaN(idx)) {
                     dragIdx = idx;
+                    dragItem = item;
                     startY = e.clientY;
-                    e.target.style.opacity = '0.5';
+                    item.style.opacity = '0.5';
                 }
             }
         });
         
         list.addEventListener('mousemove', e => {
         
-            if (dragIdx !== -1) {
+            if (dragIdx !== -1 && dragItem) {
                 const dy = e.clientY - startY;
                 if (Math.abs(dy) > 5) {
-                e.target.style.transform = `translateY(${dy}px)`;
+                dragItem.style.transform = `translateY(${dy}px)`;
             }
         }
     });
@@ -1043,23 +1061,32 @@
             const dy = endY - startY;
             
             if (Math.abs(dy) > 10) {
-                const targetIdx = dy < 0 ? dragIdx - 1 : dragIdx + 1;
+                // The panel lists the top of the stack first, so dragging a row
+                // up on screen means moving it toward the top of the stack
+                // (a higher index in this.layers), and vice versa.
+                const targetIdx = dy < 0 ? dragIdx + 1 : dragIdx - 1;
                 if (targetIdx >= 0 && targetIdx < this.layers.length) {
                     this._moveLayerTo(dragIdx, targetIdx);
                 }
             }
             
-            e.target.style.opacity = '';
-            e.target.style.transform = '';
+            if (dragItem) {
+                dragItem.style.opacity = '';
+                dragItem.style.transform = '';
+            }
             dragIdx = -1;
+            dragItem = null;
         }
     });
 
     list.addEventListener('mouseleave', e => {
         if (dragIdx !== -1) {
-            e.target.style.opacity = '';
-            e.target.style.transform = '';
+            if (dragItem) {
+                dragItem.style.opacity = '';
+                dragItem.style.transform = '';
+            }
             dragIdx = -1;
+            dragItem = null;
         }
     });
     }
@@ -1625,8 +1652,62 @@ _drawPixelOutline(ctx, pixels, layer) {
             }
         }
 
+        // Bake the rotation into the layer's own pixel data so it's permanently
+        // "fixed" — otherwise rotation is just a render-time transform and later
+        // edits (erasing, drawing, effects) won't line up with what's on screen.
+        this._flattenLayerRotation(l);
+
         this.saveState();
         this._render();
+    }
+
+    _flattenLayerRotation(layer) {
+        if (!layer || !layer.rotation) return;
+
+        const theta = layer.rotation;
+        const w = layer.canvas.width, h = layer.canvas.height;
+        const cos = Math.cos(theta), sin = Math.sin(theta);
+
+        // The live render rotates the layer canvas about its own top-left
+        // corner (layer.x, layer.y) — see _render(). Match that pivot here,
+        // and compute the bounding box of the rotated corners so we can size
+        // a new canvas that holds the whole rotated image without clipping.
+        const corners = [
+            { x: 0, y: 0 },
+            { x: w, y: 0 },
+            { x: 0, y: h },
+            { x: w, y: h }
+        ].map(p => ({
+            x: p.x * cos - p.y * sin,
+            y: p.x * sin + p.y * cos
+        }));
+
+        const minX = Math.min(...corners.map(c => c.x));
+        const maxX = Math.max(...corners.map(c => c.x));
+        const minY = Math.min(...corners.map(c => c.y));
+        const maxY = Math.max(...corners.map(c => c.y));
+
+        const newW = Math.max(1, Math.round(maxX - minX));
+        const newH = Math.max(1, Math.round(maxY - minY));
+
+        const tmp = document.createElement('canvas');
+        tmp.width = newW;
+        tmp.height = newH;
+        const tctx = tmp.getContext('2d');
+
+        tctx.save();
+        tctx.translate(-minX, -minY);
+        tctx.rotate(theta);
+        tctx.drawImage(layer.canvas, 0, 0);
+        tctx.restore();
+
+        // Shift the layer's position so the baked (unrotated) canvas lands
+        // in exactly the same place on screen as the rotated one did.
+        layer.x += minX;
+        layer.y += minY;
+        layer.canvas = tmp;
+        layer.ctx = tctx;
+        layer.rotation = 0;
     }
 
     _canvasXY(e) {
@@ -1781,8 +1862,7 @@ _drawPixelOutline(ctx, pixels, layer) {
         return;
     }
 
-    if (this.tool === 'eraser' && e.button == 0) { 
-        // this.eraserDrawing = true;
+    if (this.tool === 'eraser' && this.eraserDrawing) {
         this._erase(e);
         return;
     }
@@ -1856,9 +1936,8 @@ _drawPixelOutline(ctx, pixels, layer) {
             if (this.selCircleDrawing) {
                 this.selCircleDrawing = false;
             }
-            if (this.tool === 'eraser' && e.button === 0) { 
-                this.eraserDrawing = true;
-                this._erase(e);
+            if (this.tool === 'eraser') {
+                this.eraserDrawing = false;
             }
             if (this.tool === 'rotate') {
              this._stopContinuousRotate();
@@ -1924,6 +2003,9 @@ _drawPixelOutline(ctx, pixels, layer) {
         switch(effect) {
             case 'fliph':
             this._flipHorizontal(layer);
+            break;
+            case 'filllayer':
+            this._fillLayer(layer);
             break;
             case 'blur':
             this._blur(layer,5);
@@ -2024,6 +2106,64 @@ _drawPixelOutline(ctx, pixels, layer) {
         l.ctx.translate(l.canvas.width, 0);
         l.ctx.scale(-1, 1);
         l.ctx.drawImage(l.canvas, 0, 0);
+        l.ctx.restore();
+    }
+
+    _fillLayer(l) {
+        if (!l) return;
+
+        // Magic wand selection: fill exactly the selected pixels.
+        if (this.magicWandSelection && this.magicWandSelection.pixels && this.magicWandSelection.pixels.length) {
+            l.ctx.save();
+            l.ctx.fillStyle = this.color;
+            this.magicWandSelection.pixels.forEach(pixelKey => {
+                const [px, py] = pixelKey.split(',').map(Number);
+                l.ctx.fillRect(px, py, 1, 1);
+            });
+            l.ctx.restore();
+            return;
+        }
+
+        // Circle/ellipse selection.
+        if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
+            l.ctx.save();
+            l.ctx.beginPath();
+            l.ctx.ellipse(
+                this.selCircle.cx - l.x,
+                this.selCircle.cy - l.y,
+                this.selCircle.rx,
+                this.selCircle.ry,
+                0, 0, Math.PI * 2
+            );
+            l.ctx.clip();
+            l.ctx.fillStyle = this.color;
+            l.ctx.fillRect(0, 0, l.canvas.width, l.canvas.height);
+            l.ctx.restore();
+            return;
+        }
+
+        // Rectangle selection.
+        if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+            l.ctx.save();
+            l.ctx.beginPath();
+            l.ctx.rect(
+                this.sel.x - l.x,
+                this.sel.y - l.y,
+                this.sel.w,
+                this.sel.h
+            );
+            l.ctx.clip();
+            l.ctx.fillStyle = this.color;
+            l.ctx.fillRect(0, 0, l.canvas.width, l.canvas.height);
+            l.ctx.restore();
+            return;
+        }
+
+        // No selection — fill the whole layer.
+        l.ctx.save();
+        l.ctx.globalCompositeOperation = 'source-over';
+        l.ctx.fillStyle = this.color;
+        l.ctx.fillRect(0, 0, l.canvas.width, l.canvas.height);
         l.ctx.restore();
     }
 
@@ -2548,8 +2688,8 @@ _drawPixelOutline(ctx, pixels, layer) {
             if (e.button === 0) {
                 const item = e.target.closest('.layer-item');
                 if (item) {
-                    const idx = Array.from(e.currentTarget.children).indexOf(item);
-                    if (idx !== -1) {
+                    const idx = parseInt(item.dataset.idx, 10);
+                    if (!Number.isNaN(idx)) {
                         this.selectedLayers.push(idx);
                         item.style.setProperty('background-color', 'purple', 'important');
                     }
