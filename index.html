@@ -258,6 +258,9 @@
         padding-top: 2px;
         padding-left: 2px;
     }
+    #align-canvas {
+        
+    }
     </style>
     </head>
     <body>
@@ -416,6 +419,7 @@
         </optgroup>
     </select>
     <button id="btnResize">Apply</button>
+    Centered: <input type="checkbox" name="align-canvas" id="align-canvas" />
     </div>
     <div class="canvas-scroll" id="canvasScroll">
     <div class="canvas-wrapper" id="canvasWrapper">
@@ -1719,6 +1723,17 @@ _drawPixelOutline(ctx, pixels, layer) {
 
         const cv = this.mainCanvas;
         cv.addEventListener('contextmenu', e => e.preventDefault());
+
+        // Align canvas
+        let align = document.getElementById('align-canvas');
+        align.addEventListener('click', (e) => {
+            let alignCanvas = document.getElementById('align-canvas');
+                if(alignCanvas.checked != true) {
+                document.getElementById('canvasWrapper').style.margin = '0';
+                } else {
+                document.getElementById('canvasWrapper').style.margin = '0 auto';
+                }  
+        });
 
         cv.addEventListener('click', (e) => {
             switch (this.tool) {
