@@ -328,6 +328,9 @@
     <select class="tb-btn" id="effects"  title="Effects">
         <option value="" class="option-sep">Layer effect</option>
         <option value="fliph">Flip Horizontal</option>
+        <option value="flipv">Flip Vertical</option>
+        <option value="flip90cw">Flip 90 degrees cw</option>
+        <option value="flip90ccw">Flip 90 degrees ccw</option>
         <option value="filllayer">Fill Layer</option>
         <option value="blur">Blur</option>
         <option value="dropshadow">Drop shadow</option>
@@ -2019,6 +2022,15 @@ _drawPixelOutline(ctx, pixels, layer) {
             case 'fliph':
             this._flipHorizontal(layer);
             break;
+            case 'flipv':
+            this._flipVertical(layer);
+            break;
+            case 'flip90cw':
+            this._flipDegree(layer,90);
+            break;
+            case 'flip90ccw':
+            this._flipDegree(layer,270);
+            break;
             case 'filllayer':
             this._fillLayer(layer);
             break;
@@ -2124,6 +2136,21 @@ _drawPixelOutline(ctx, pixels, layer) {
         l.ctx.restore();
     }
 
+    _flipVertical(l) {
+        l.ctx.save();
+        l.ctx.scale(1, -1);
+        l.ctx.drawImage(l.canvas, 0, -l.canvas.height);  // Draw flipped
+        l.ctx.restore();
+    }
+
+    _flipDegree(l, deg) {
+        l.ctx.save();
+        l.ctx.translate(l.canvas.width / 2, l.canvas.height / 2); 
+        l.ctx.rotate(deg * Math.PI / 180);  // Convert degrees to radians
+        l.ctx.drawImage(l.canvas, -l.canvas.width / 2, -l.canvas.height / 2);
+        l.ctx.restore();
+    }
+    
     _fillLayer(l) {
         if (!l) return;
 
