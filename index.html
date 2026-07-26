@@ -968,10 +968,24 @@
     if (idx === this.activeIdx) {
         item.classList.add('active');
     }
+    if (this.selectedLayers && this.selectedLayers.includes(idx)) {
+        item.classList.add('selected');
+    }
 
     // Clicking anywhere on the row selects the layer (not just the name text).
-    item.addEventListener('click', () => {
-        this.activeIdx = idx;
+    // Plain click = single select. Ctrl/Cmd+click = toggle in multi-select.
+    item.addEventListener('click', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            const pos = this.selectedLayers.indexOf(idx);
+            if (pos === -1) {
+                this.selectedLayers.push(idx);
+            } else {
+                this.selectedLayers.splice(pos, 1);
+            }
+        } else {
+            this.activeIdx = idx;
+            this.selectedLayers = [];
+        }
         this._refreshLayersPanel();
     });
 
@@ -1427,10 +1441,150 @@ _drawPixelOutline(ctx, pixels, layer) {
         }
         
         _copySelection() {
+
+            // Copy whole layers if any are multi-selected in the layers panel
+            if (this.selectedLayers) {
+                this.clipboard = {
+                    type: 'layers',
+                    layers: this.selectedLayers.map(idx => {
+                        const layer = this.layers[idx];
+                        return {
+                            canvas: layer.canvas,
+                            x: layer.x,
+                            y: layer.y,
+                            rotation: layer.rotation,
+                            name: layer.name
+                        };
+                    })
+                };
+            }
+
             const l = this.activeLayer; if (!l) return;
         
             if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
-                // ... existing ellipse code
+
+  // ellipse selection copy (excluding stroke)
+console.log('Copying ellipse selection without stroke');
+
+if (!this.selCircle || (this.selCircle.rx <= 0 && this.selCircle.ry <= 0)) {
+    console.error('No valid ellipse selection to copy!');
+    return;
+}
+
+try {
+    // Calculate stroke width (matches your drawing code)
+    const strokeWidth = 2 / this.zoomLevel;
+
+    // Create temp canvas sized to the ellipse's bounding box
+    const diameterX = this.selCircle.rx * 2;
+    const diameterY = this.selCircle.ry * 2;
+    const tmp = document.createElement('canvas');
+    tmp.width = diameterX;
+    tmp.height = diameterY;
+    const ctx = tmp.getContext('2d');
+
+    // Calculate position in canvas coordinates (accounting for l.x/l.y offset)
+    const x = (this.selCircle.cx - l.x) - this.selCircle.rx;
+    const y = (this.selCircle.cy - l.y) - this.selCircle.ry;
+
+    // Clear canvas with transparent background
+    ctx.clearRect(0, 0, tmp.width, tmp.height);
+
+    // Create clipping path that's INSIDE the stroke area
+    // Reduce the ellipse size by half the stroke width to exclude the stroke
+    const innerRx = this.selCircle.rx - (strokeWidth/2);
+    const innerRy = this.selCircle.ry - (strokeWidth/2);
+    const safeInnerRx = Math.max(innerRx, 0);
+    const safeInnerRy = Math.max(innerRy, 0);
+
+    // Set clipping path to the inner area
+    ctx.beginPath();
+    ctx.ellipse(
+        this.selCircle.rx,
+        this.selCircle.ry,
+        safeInnerRx,
+        safeInnerRy,
+        0,
+        0,
+        Math.PI * 2
+    );
+    ctx.clip();
+
+    // Draw the elliptical region from main canvas to temp canvas
+    // Start copying from inside the stroke area
+    ctx.drawImage(
+        this.mainCanvas,
+        x + (strokeWidth/2),
+        y + (strokeWidth/2),
+        diameterX - strokeWidth,
+        diameterY - strokeWidth,
+        0,
+        0,
+        diameterX,
+        diameterY
+    );
+
+    // Store to clipboard with adjusted coordinates
+    this.clipboard = {
+        type: 'canvas',
+        canvas: tmp,
+        x: x + l.x + (strokeWidth/2),
+        y: y + l.y + (strokeWidth/2),
+        worldX: l.x,
+        worldY: l.y,
+        rx: safeInnerRx,
+        ry: safeInnerRy
+    };
+
+    this.selCircle = null;
+    console.log(`Ellipse copied successfully (excluded ${strokeWidth}px stroke)!`);
+} catch (e) {
+    console.error('Error copying ellipse:', e);
+    this.selCircle = null;
+}
+
+            } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+
+                // rectangle selection copy
+                console.log('copying rect');
+                
+                const tmp = document.createElement('canvas');
+                tmp.width = this.sel.w-2;
+                tmp.height = this.sel.h-2;
+                const ctx = tmp.getContext('2d');
+
+                let world = {};
+
+                world.x = this.sel.x+1;
+                world.y = this.sel.y+1;
+                world.w = this.sel.w;
+                world.h = this.sel.h;
+
+                this.sel = null;
+
+                // Should draw from the main canvas (or source) onto the temp canvas
+                // Assuming 'this' has a reference to the main canvas
+                ctx.drawImage(
+                    this.mainCanvas,  // or whatever your main canvas is called
+                    world.x,       // source x
+                    world.y,       // source y
+                    world.w,       // source width
+                    world.h,       // source height
+                    0,                // destination x
+                    0,                // destination y
+                    world.w,       // destination width
+                    world.h        // destination height
+                );
+
+                this.clipboard = {
+                    type: 'canvas',
+                    canvas: tmp,      // store the canvas element, not the context
+                    x: world.x,
+                    y: world.y,
+                    worldX: l.x,
+                    worldY: l.y
+                };
+
             } else if (this.magicWandSelection) {
                 const { x, y, width, height, layerX, layerY } = this.magicWandSelection;
                 
@@ -1469,9 +1623,7 @@ _drawPixelOutline(ctx, pixels, layer) {
                     worldX: x,
                     worldY: y
                 };
-            } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
-                // ... existing rect code
-            }
+            } 
         }
 
     _saveSelectionAsImage() {
@@ -1523,8 +1675,29 @@ _drawPixelOutline(ctx, pixels, layer) {
 
 
     _pasteClipboard() {
-        this.saveState();
         if (!this.clipboard) return;
+
+        if (this.clipboard.type === 'layers') {
+            const offset = 20;
+            const pastedIndices = [];
+            this.clipboard.layers.forEach(copied => {
+                const nl = this._addLayer(`${copied.name} copy`);
+                nl.canvas.width = copied.canvas.width;
+                nl.canvas.height = copied.canvas.height;
+                nl.ctx = nl.canvas.getContext('2d');
+                nl.ctx.drawImage(copied.canvas, 0, 0);
+                nl.x = copied.x + offset;
+                nl.y = copied.y + offset;
+                nl.rotation = copied.rotation;
+                pastedIndices.push(this.layers.length - 1);
+            });
+            this.selectedLayers = pastedIndices;
+            this._refreshLayersPanel();
+            this._render();
+            return;
+        }
+
+        this.saveState();
         const nl = this._addLayer('Pasted');
     
         if (this.clipboard.type === 'canvas') {
@@ -2978,26 +3151,13 @@ _drawPixelOutline(ctx, pixels, layer) {
 
     _bindKeys() {
 
-        // Mouse event handler should be outside the keyboard event check
-        document.getElementById('layersList').addEventListener('mousedown', (e) => {
-            if (e.button === 0) {
-                const item = e.target.closest('.layer-item');
-                if (item) {
-                    const idx = parseInt(item.dataset.idx, 10);
-                    if (!Number.isNaN(idx)) {
-                        this.selectedLayers.push(idx);
-                        item.style.setProperty('background-color', 'purple', 'important');
-                    }
-                }
-            }
-        });
-      
         
         document.addEventListener('keydown', e => {
         
             if (document.getElementById('textModal').classList.contains('open')) return;
             
             if (e.ctrlKey) {
+
                 switch(e.key.toLowerCase()) {
                     case 'o': e.preventDefault(); this._openFile();       break;
                     case 's': e.preventDefault(); this._saveFile();       break;
