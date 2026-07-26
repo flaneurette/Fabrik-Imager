@@ -19,7 +19,7 @@
         align-items: center;
         gap: 6px;
         flex-shrink: 0;
-        color: #666;
+        color: #666;save
     }
     .tool-btn {
         width: 28px; height: 28px;
@@ -1652,6 +1652,9 @@ _drawPixelOutline(ctx, pixels, layer) {
             0, 0,
             this.sel.w, this.sel.h
         );
+
+        this.sel = null;
+        this._deselect();
 
         canvas.toBlob((blob) => {
             if (!blob) {
