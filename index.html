@@ -342,6 +342,7 @@
         <option value="invert">Invert</option>
         <option value="opacity">Opacity</option>
         <option value="saturate">Saturate</option>
+        <option value="replacecolor">Replace Color…</option>
 
         <option value="satred">Neon: Red</option>
         <option value="satgreen">Neon: Green</option>
@@ -517,6 +518,28 @@
     <div class="modal-row">
     <button class="btn-cancel" id="btnTextCancel">Cancel</button>
     <button class="btn-ok"     id="btnTextOk">Insert</button>
+    </div>
+    </div>
+    </div>
+
+    <!-- REPLACE COLOR MODAL -->
+    <div class="modal-overlay" id="replaceColorModal">
+    <div class="modal-box">
+    <h3>Replace Color</h3>
+    <label>Replace this color (pencil)</label>
+    <input type="color" id="replaceColorFrom" class="color-picker" value="#000000">
+    <label style="margin-top:10px;">With this color (foreground)</label>
+    <input type="color" id="replaceColorTo" class="color-picker" value="#000000">
+    <label style="margin-top:10px;">Tolerance: <span id="replaceColorToleranceVal">20</span></label>
+    <input type="range" id="replaceColorTolerance" min="0" max="150" value="20" style="width:100%;">
+    <label style="display:flex; align-items:center; gap:6px; margin-top:10px; cursor:pointer;">
+    <input type="checkbox" id="replaceColorKeepAlpha" checked style="width:auto;">
+    Preserve original transparency
+    </label>
+    <div style="font-size:11px; color:#888; margin-top:8px;">Preview updates live on the canvas. Nothing is kept unless you click Apply.</div>
+    <div class="modal-row">
+    <button class="btn-cancel" id="btnReplaceColorCancel">Cancel</button>
+    <button class="btn-ok"     id="btnReplaceColorOk">Apply</button>
     </div>
     </div>
     </div>
@@ -2135,8 +2158,15 @@ _drawPixelOutline(ctx, pixels, layer) {
     }
 
     _effects() {
-        this.saveState();
         const effect = document.getElementById('effects').value.trim();
+
+        if (effect === 'replacecolor') {
+            document.getElementById('effects').value = '';
+            this._openReplaceColorModal();
+            return;
+        }
+
+        this.saveState();
         const layer = this.activeLayer;
         switch(effect) {
             case 'fliph':
@@ -2246,7 +2276,100 @@ _drawPixelOutline(ctx, pixels, layer) {
         this._render();
     }
 
-    // EFFECTS ---------------------------------------------------------
+    // REPLACE COLOR ----------------------------------------------------
+    // "From" defaults to the pencil color (#brushcolor), "to" defaults to
+    // the foreground/layer color (#colorPicker / this.color), matching what
+    // those two pickers are used for elsewhere in the app. Preview redraws
+    // live from a single untouched snapshot each time a control changes, so
+    // dragging the tolerance slider around never compounds or degrades the
+    // image — only committing with Apply keeps the result.
+    _openReplaceColorModal() {
+        const layer = this.activeLayer;
+        if (!layer) return;
+
+        // Capture the pre-replace pixels once, both for the undo stack and
+        // as the clean source every live preview redraw starts from.
+        this.saveState();
+
+        this._replaceColorLayer = layer;
+        this._replaceColorOriginal = document.createElement('canvas');
+        this._replaceColorOriginal.width = layer.canvas.width;
+        this._replaceColorOriginal.height = layer.canvas.height;
+        this._replaceColorOriginal.getContext('2d').drawImage(layer.canvas, 0, 0);
+
+        document.getElementById('replaceColorFrom').value =
+            document.getElementById('brushcolor').value || '#000000';
+        document.getElementById('replaceColorTo').value =
+            document.getElementById('colorPicker').value || this.color || '#000000';
+        document.getElementById('replaceColorTolerance').value = 20;
+        document.getElementById('replaceColorToleranceVal').textContent = '20';
+        document.getElementById('replaceColorKeepAlpha').checked = true;
+
+        document.getElementById('replaceColorModal').classList.add('open');
+        this._updateReplaceColorPreview();
+    }
+
+    _hexToRgb(hex) {
+        const clean = (hex || '#000000').replace('#', '');
+        const num = parseInt(clean, 16) || 0;
+        return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+    }
+
+    _updateReplaceColorPreview() {
+        const layer = this._replaceColorLayer;
+        if (!layer || !this._replaceColorOriginal) return;
+
+        const from = this._hexToRgb(document.getElementById('replaceColorFrom').value);
+        const to   = this._hexToRgb(document.getElementById('replaceColorTo').value);
+        const tolerance = parseInt(document.getElementById('replaceColorTolerance').value, 10) || 0;
+        const keepAlpha = document.getElementById('replaceColorKeepAlpha').checked;
+
+        const w = layer.canvas.width, h = layer.canvas.height;
+
+        // Always redraw from the untouched snapshot first, never from
+        // whatever the previous preview pass left behind.
+        layer.ctx.clearRect(0, 0, w, h);
+        layer.ctx.drawImage(this._replaceColorOriginal, 0, 0);
+
+        const imageData = layer.ctx.getImageData(0, 0, w, h);
+        const data = imageData.data;
+        const tolSq = tolerance * tolerance;
+
+        for (let i = 0; i < data.length; i += 4) {
+            if (data[i + 3] === 0) continue; // skip fully transparent pixels
+            const dr = data[i]     - from.r;
+            const dg = data[i + 1] - from.g;
+            const db = data[i + 2] - from.b;
+            if ((dr * dr + dg * dg + db * db) <= tolSq) {
+                data[i]     = to.r;
+                data[i + 1] = to.g;
+                data[i + 2] = to.b;
+                if (!keepAlpha) data[i + 3] = 255;
+            }
+        }
+
+        layer.ctx.putImageData(imageData, 0, 0);
+        this._render();
+    }
+
+    _applyReplaceColor() {
+        document.getElementById('replaceColorModal').classList.remove('open');
+        this._replaceColorOriginal = null;
+        this._replaceColorLayer = null;
+        this._render();
+    }
+
+    _cancelReplaceColor() {
+        const layer = this._replaceColorLayer;
+        if (layer && this._replaceColorOriginal) {
+            layer.ctx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
+            layer.ctx.drawImage(this._replaceColorOriginal, 0, 0);
+        }
+        document.getElementById('replaceColorModal').classList.remove('open');
+        this._replaceColorOriginal = null;
+        this._replaceColorLayer = null;
+        this._render();
+    }
 
     _flipHorizontal(l) {
         l.ctx.save();
@@ -2841,6 +2964,16 @@ _drawPixelOutline(ctx, pixels, layer) {
     document.getElementById('effects').addEventListener('change', () => {
         this._effects();
     });
+
+    document.getElementById('replaceColorFrom').addEventListener('input', () => this._updateReplaceColorPreview());
+    document.getElementById('replaceColorTo').addEventListener('input', () => this._updateReplaceColorPreview());
+    document.getElementById('replaceColorKeepAlpha').addEventListener('change', () => this._updateReplaceColorPreview());
+    document.getElementById('replaceColorTolerance').addEventListener('input', (e) => {
+        document.getElementById('replaceColorToleranceVal').textContent = e.target.value;
+        this._updateReplaceColorPreview();
+    });
+    document.getElementById('btnReplaceColorOk').addEventListener('click', () => this._applyReplaceColor());
+    document.getElementById('btnReplaceColorCancel').addEventListener('click', () => this._cancelReplaceColor());
     }
 
     _bindKeys() {
