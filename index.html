@@ -1463,90 +1463,91 @@ _drawPixelOutline(ctx, pixels, layer) {
         
             if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
 
-  // ellipse selection copy (excluding stroke)
-console.log('Copying ellipse selection without stroke');
-
-if (!this.selCircle || (this.selCircle.rx <= 0 && this.selCircle.ry <= 0)) {
-    console.error('No valid ellipse selection to copy!');
-    return;
-}
-
-try {
-    // Calculate stroke width (matches your drawing code)
-    const strokeWidth = 2 / this.zoomLevel;
-
-    // Create temp canvas sized to the ellipse's bounding box
-    const diameterX = this.selCircle.rx * 2;
-    const diameterY = this.selCircle.ry * 2;
-    const tmp = document.createElement('canvas');
-    tmp.width = diameterX;
-    tmp.height = diameterY;
-    const ctx = tmp.getContext('2d');
-
-    // Calculate position in canvas coordinates (accounting for l.x/l.y offset)
-    const x = (this.selCircle.cx - l.x) - this.selCircle.rx;
-    const y = (this.selCircle.cy - l.y) - this.selCircle.ry;
-
-    // Clear canvas with transparent background
-    ctx.clearRect(0, 0, tmp.width, tmp.height);
-
-    // Create clipping path that's INSIDE the stroke area
-    // Reduce the ellipse size by half the stroke width to exclude the stroke
-    const innerRx = this.selCircle.rx - (strokeWidth/2);
-    const innerRy = this.selCircle.ry - (strokeWidth/2);
-    const safeInnerRx = Math.max(innerRx, 0);
-    const safeInnerRy = Math.max(innerRy, 0);
-
-    // Set clipping path to the inner area
-    ctx.beginPath();
-    ctx.ellipse(
-        this.selCircle.rx,
-        this.selCircle.ry,
-        safeInnerRx,
-        safeInnerRy,
-        0,
-        0,
-        Math.PI * 2
-    );
-    ctx.clip();
-
-    // Draw the elliptical region from main canvas to temp canvas
-    // Start copying from inside the stroke area
-    ctx.drawImage(
-        this.mainCanvas,
-        x + (strokeWidth/2),
-        y + (strokeWidth/2),
-        diameterX - strokeWidth,
-        diameterY - strokeWidth,
-        0,
-        0,
-        diameterX,
-        diameterY
-    );
-
-    // Store to clipboard with adjusted coordinates
-    this.clipboard = {
-        type: 'canvas',
-        canvas: tmp,
-        x: x + l.x + (strokeWidth/2),
-        y: y + l.y + (strokeWidth/2),
-        worldX: l.x,
-        worldY: l.y,
-        rx: safeInnerRx,
-        ry: safeInnerRy
-    };
-
-    this.selCircle = null;
-    console.log(`Ellipse copied successfully (excluded ${strokeWidth}px stroke)!`);
-} catch (e) {
-    console.error('Error copying ellipse:', e);
-    this.selCircle = null;
-}
+                  // ellipse selection copy (excluding stroke)
+                console.log('Copying ellipse selection without stroke');
+                
+                if (!this.selCircle || (this.selCircle.rx <= 0 && this.selCircle.ry <= 0)) {
+                    console.error('No valid ellipse selection to copy!');
+                    return;
+                }
+                
+                try {
+                
+                    this.saveState();
+                    // Calculate stroke width (matches your drawing code)
+                    const strokeWidth = 2 / this.zoomLevel;
+                
+                    // Create temp canvas sized to the ellipse's bounding box
+                    const diameterX = this.selCircle.rx * 2;
+                    const diameterY = this.selCircle.ry * 2;
+                    const tmp = document.createElement('canvas');
+                    tmp.width = diameterX;
+                    tmp.height = diameterY;
+                    const ctx = tmp.getContext('2d');
+                
+                    // Calculate position in canvas coordinates (accounting for l.x/l.y offset)
+                    const x = (this.selCircle.cx - l.x) - this.selCircle.rx;
+                    const y = (this.selCircle.cy - l.y) - this.selCircle.ry;
+                
+                    // Clear canvas with transparent background
+                    ctx.clearRect(0, 0, tmp.width, tmp.height);
+                
+                    // Create clipping path that's INSIDE the stroke area
+                    // Reduce the ellipse size by half the stroke width to exclude the stroke
+                    const innerRx = this.selCircle.rx - (strokeWidth/2);
+                    const innerRy = this.selCircle.ry - (strokeWidth/2);
+                    const safeInnerRx = Math.max(innerRx, 0);
+                    const safeInnerRy = Math.max(innerRy, 0);
+                
+                    // Set clipping path to the inner area
+                    ctx.beginPath();
+                    ctx.ellipse(
+                        this.selCircle.rx,
+                        this.selCircle.ry,
+                        safeInnerRx,
+                        safeInnerRy,
+                        0,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.clip();
+                
+                    // Draw the elliptical region from main canvas to temp canvas
+                    // Start copying from inside the stroke area
+                    ctx.drawImage(
+                        this.mainCanvas,
+                        x + (strokeWidth/2),
+                        y + (strokeWidth/2),
+                        diameterX - strokeWidth,
+                        diameterY - strokeWidth,
+                        0,
+                        0,
+                        diameterX,
+                        diameterY
+                    );
+                
+                    // Store to clipboard with adjusted coordinates
+                    this.clipboard = {
+                        type: 'canvas',
+                        canvas: tmp,
+                        x: x + l.x + (strokeWidth/2),
+                        y: y + l.y + (strokeWidth/2),
+                        worldX: l.x,
+                        worldY: l.y,
+                        rx: safeInnerRx,
+                        ry: safeInnerRy
+                    };
+                
+                    this.selCircle = null;
+                    console.log(`Ellipse copied successfully (excluded ${strokeWidth}px stroke)!`);
+                } catch (e) {
+                    console.error('Error copying ellipse:', e);
+                    this.selCircle = null;
+                }
 
             } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
 
-                // rectangle selection copy
-                console.log('copying rect');
+                this.saveState();
                 
                 const tmp = document.createElement('canvas');
                 tmp.width = this.sel.w-2;
@@ -1562,8 +1563,6 @@ try {
 
                 this.sel = null;
 
-                // Should draw from the main canvas (or source) onto the temp canvas
-                // Assuming 'this' has a reference to the main canvas
                 ctx.drawImage(
                     this.mainCanvas,  // or whatever your main canvas is called
                     world.x,       // source x
@@ -1859,25 +1858,10 @@ try {
             }
         }
 
-        // NOTE: rotation is intentionally left as a live, non-destructive
-        // transform here — it's already applied correctly at render time
-        // (see _render). We used to bake it into the layer's pixels on every
-        // single click/release, which meant every quick rotate click
-        // resampled the image again on top of the last resample, so the
-        // layer got visibly blurrier the more you clicked. Now we only bake
-        // (via _ensureLayerFlattened) right before something that actually
-        // needs unrotated pixel data — erasing, filling, or brushing — so a
-        // whole rotate session costs at most one resample instead of one per
-        // click.
-
         this.saveState();
         this._render();
     }
 
-    // Bakes a layer's live rotation into its pixel data, but only if there
-    // actually is one. Call this before any operation that assumes the
-    // layer's canvas is axis-aligned (eraser, fill, brush) — it's a no-op
-    // otherwise, so it's safe to call liberally without adding extra blur.
     _ensureLayerFlattened(layer) {
         if (layer && layer.rotation) {
             this._flattenLayerRotation(layer);
@@ -1890,11 +1874,6 @@ try {
         const theta = layer.rotation;
         const w = layer.canvas.width, h = layer.canvas.height;
 
-        // Floating-point cos/sin of Math.PI/2, Math.PI, etc. are never exactly
-        // 0/±1 (e.g. Math.cos(Math.PI/2) ≈ 6.12e-17), so a "clean" 90° snap
-        // still triggers sub-pixel interpolation and blurs the layer every
-        // time it's baked. Detect near-cardinal angles and snap cos/sin to
-        // their exact values so those rotations are a lossless pixel reshuffle.
         const TWO_PI = Math.PI * 2;
         let norm = theta % TWO_PI;
         if (norm < 0) norm += TWO_PI;
@@ -1911,10 +1890,6 @@ try {
             sin = Math.sin(theta);
         }
 
-        // The live render rotates the layer canvas about its own top-left
-        // corner (layer.x, layer.y) — see _render(). Match that pivot here,
-        // and compute the bounding box of the rotated corners so we can size
-        // a new canvas that holds the whole rotated image without clipping.
         const corners = [
             { x: 0, y: 0 },
             { x: w, y: 0 },
@@ -1939,8 +1914,6 @@ try {
         const tctx = tmp.getContext('2d');
 
         if (isCardinal) {
-            // Exact 90°-multiple rotation: no resampling needed, so turn
-            // smoothing off entirely for a pixel-perfect copy.
             tctx.imageSmoothingEnabled = false;
         } else {
             // Arbitrary angle: resampling is unavoidable, so at least use
@@ -1952,9 +1925,6 @@ try {
         tctx.save();
         tctx.translate(-minX, -minY);
         if (isCardinal) {
-            // Use the exact snapped cos/sin via setTransform instead of
-            // ctx.rotate(theta), which would reintroduce the floating-point
-            // error we just cancelled out above.
             tctx.transform(cos, sin, -sin, cos, 0, 0);
         } else {
             tctx.rotate(theta);
@@ -2449,19 +2419,10 @@ try {
         this._render();
     }
 
-    // REPLACE COLOR ----------------------------------------------------
-    // "From" defaults to the pencil color (#brushcolor), "to" defaults to
-    // the foreground/layer color (#colorPicker / this.color), matching what
-    // those two pickers are used for elsewhere in the app. Preview redraws
-    // live from a single untouched snapshot each time a control changes, so
-    // dragging the tolerance slider around never compounds or degrades the
-    // image — only committing with Apply keeps the result.
     _openReplaceColorModal() {
         const layer = this.activeLayer;
         if (!layer) return;
 
-        // Capture the pre-replace pixels once, both for the undo stack and
-        // as the clean source every live preview redraw starts from.
         this.saveState();
 
         this._replaceColorLayer = layer;
