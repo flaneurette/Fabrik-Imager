@@ -470,7 +470,8 @@
     <label>Font</label>
     <input type="text" id="fontFace" value="" placeholder="">
     <label>Or select a system font...</label>
-    <select id="fontFaces">
+    <div style="display:flex; gap:6px; margin-bottom:4px;">
+    <select id="fontFaces" style="flex:1; margin-bottom:0;">
         <option value="">------ Sans-serif font ------</option>
         <option value="Arial">Arial</option>
         <option value="Calibri">Calibri</option>
@@ -506,6 +507,9 @@
         <option value="MS Outlook">MS Outlook</option>
         <option value="Wingdings">Wingdings</option>
     </select>
+    <button type="button" class="tb-btn" id="btnDetectFonts" title="Read fonts installed on this computer (Chrome/Edge only, asks permission)" style="white-space:nowrap;">Detect fonts</button>
+    </div>
+    <div id="fontDetectStatus" style="font-size:11px; color:#888; margin-bottom:10px; min-height:14px;"></div>
     <label>Serif</label>
     <input type="text" id="serif" value="sans-serif" placeholder="sans-serif">
     <label>Font size (px)</label>
@@ -1659,13 +1663,29 @@ _drawPixelOutline(ctx, pixels, layer) {
             }
         }
 
-        // Bake the rotation into the layer's own pixel data so it's permanently
-        // "fixed" — otherwise rotation is just a render-time transform and later
-        // edits (erasing, drawing, effects) won't line up with what's on screen.
-        this._flattenLayerRotation(l);
+        // NOTE: rotation is intentionally left as a live, non-destructive
+        // transform here — it's already applied correctly at render time
+        // (see _render). We used to bake it into the layer's pixels on every
+        // single click/release, which meant every quick rotate click
+        // resampled the image again on top of the last resample, so the
+        // layer got visibly blurrier the more you clicked. Now we only bake
+        // (via _ensureLayerFlattened) right before something that actually
+        // needs unrotated pixel data — erasing, filling, or brushing — so a
+        // whole rotate session costs at most one resample instead of one per
+        // click.
 
         this.saveState();
         this._render();
+    }
+
+    // Bakes a layer's live rotation into its pixel data, but only if there
+    // actually is one. Call this before any operation that assumes the
+    // layer's canvas is axis-aligned (eraser, fill, brush) — it's a no-op
+    // otherwise, so it's safe to call liberally without adding extra blur.
+    _ensureLayerFlattened(layer) {
+        if (layer && layer.rotation) {
+            this._flattenLayerRotation(layer);
+        }
     }
 
     _flattenLayerRotation(layer) {
@@ -1673,7 +1693,27 @@ _drawPixelOutline(ctx, pixels, layer) {
 
         const theta = layer.rotation;
         const w = layer.canvas.width, h = layer.canvas.height;
-        const cos = Math.cos(theta), sin = Math.sin(theta);
+
+        // Floating-point cos/sin of Math.PI/2, Math.PI, etc. are never exactly
+        // 0/±1 (e.g. Math.cos(Math.PI/2) ≈ 6.12e-17), so a "clean" 90° snap
+        // still triggers sub-pixel interpolation and blurs the layer every
+        // time it's baked. Detect near-cardinal angles and snap cos/sin to
+        // their exact values so those rotations are a lossless pixel reshuffle.
+        const TWO_PI = Math.PI * 2;
+        let norm = theta % TWO_PI;
+        if (norm < 0) norm += TWO_PI;
+        const cardinalEps = 1e-6;
+        const cardinals = [0, Math.PI / 2, Math.PI, Math.PI * 1.5, TWO_PI];
+        const isCardinal = cardinals.some(a => Math.abs(norm - a) < cardinalEps);
+
+        let cos, sin;
+        if (isCardinal) {
+            cos = Math.round(Math.cos(theta));
+            sin = Math.round(Math.sin(theta));
+        } else {
+            cos = Math.cos(theta);
+            sin = Math.sin(theta);
+        }
 
         // The live render rotates the layer canvas about its own top-left
         // corner (layer.x, layer.y) — see _render(). Match that pivot here,
@@ -1702,9 +1742,27 @@ _drawPixelOutline(ctx, pixels, layer) {
         tmp.height = newH;
         const tctx = tmp.getContext('2d');
 
+        if (isCardinal) {
+            // Exact 90°-multiple rotation: no resampling needed, so turn
+            // smoothing off entirely for a pixel-perfect copy.
+            tctx.imageSmoothingEnabled = false;
+        } else {
+            // Arbitrary angle: resampling is unavoidable, so at least use
+            // the highest-quality interpolation available.
+            tctx.imageSmoothingEnabled = true;
+            tctx.imageSmoothingQuality = 'high';
+        }
+
         tctx.save();
         tctx.translate(-minX, -minY);
-        tctx.rotate(theta);
+        if (isCardinal) {
+            // Use the exact snapped cos/sin via setTransform instead of
+            // ctx.rotate(theta), which would reintroduce the floating-point
+            // error we just cancelled out above.
+            tctx.transform(cos, sin, -sin, cos, 0, 0);
+        } else {
+            tctx.rotate(theta);
+        }
         tctx.drawImage(layer.canvas, 0, 0);
         tctx.restore();
 
@@ -1799,6 +1857,7 @@ _drawPixelOutline(ctx, pixels, layer) {
         
         switch (this.tool) {
         case 'brush':
+            this._ensureLayerFlattened(this.activeLayer);
             this.startDrawing(e,x,y);
         break;
         case 'select':
@@ -1818,12 +1877,14 @@ _drawPixelOutline(ctx, pixels, layer) {
         break;
 
         case 'eraser':
+             this._ensureLayerFlattened(this.activeLayer);
              this.eraserDrawing = true;
              this._erase(e);
         break;
 
         case 'fill': {
             const l = this.activeLayer; if (!l) return;
+            this._ensureLayerFlattened(l);
             const px = x - l.x, py = y - l.y;
             
             if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
@@ -1984,6 +2045,65 @@ _drawPixelOutline(ctx, pixels, layer) {
         document.getElementById('textModal').classList.add('open');
         document.getElementById('textInput').value = '';
         document.getElementById('textInput').focus();
+    }
+
+    async _detectSystemFonts() {
+        const statusEl = document.getElementById('fontDetectStatus');
+        const selectEl = document.getElementById('fontFaces');
+        const btnEl = document.getElementById('btnDetectFonts');
+
+        if (!('queryLocalFonts' in window)) {
+            statusEl.textContent = 'Not supported in this browser (Chrome or Edge only).';
+            statusEl.style.color = '#e88';
+            return;
+        }
+
+        btnEl.disabled = true;
+        statusEl.style.color = '#888';
+        statusEl.textContent = 'Requesting permission…';
+
+        try {
+            const fonts = await window.queryLocalFonts();
+
+            // Dedupe by family name and sort alphabetically
+            const families = [...new Set(fonts.map(f => f.family))].sort((a, b) => a.localeCompare(b));
+
+            if (families.length === 0) {
+                statusEl.textContent = 'No fonts returned.';
+                statusEl.style.color = '#e88';
+                return;
+            }
+
+            // Remove a previously-inserted "Installed on this device" group, if any
+            const oldGroup = selectEl.querySelector('optgroup[data-detected="1"]');
+            if (oldGroup) oldGroup.remove();
+
+            const group = document.createElement('optgroup');
+            group.label = `Installed on this device (${families.length})`;
+            group.dataset.detected = '1';
+
+            families.forEach(family => {
+                const opt = document.createElement('option');
+                opt.value = family;
+                opt.textContent = family;
+                group.appendChild(opt);
+            });
+
+            selectEl.insertBefore(group, selectEl.firstChild);
+            statusEl.textContent = `Loaded ${families.length} installed fonts.`;
+            statusEl.style.color = '#8c8';
+        } catch (err) {
+            if (err.name === 'NotAllowedError') {
+                statusEl.textContent = 'Permission denied.';
+            } else if (err.name === 'SecurityError') {
+                statusEl.textContent = 'Blocked — this page must be served over HTTPS or localhost.';
+            } else {
+                statusEl.textContent = 'Could not read system fonts: ' + err.message;
+            }
+            statusEl.style.color = '#e88';
+        } finally {
+            btnEl.disabled = false;
+        }
     }
 
     _saveModal() {
@@ -2807,6 +2927,7 @@ _drawPixelOutline(ctx, pixels, layer) {
         document.getElementById('btnDelLayer').addEventListener('click', () => this._deleteLayer(this.activeIdx));
         
         document.getElementById('btnTextOk').addEventListener('click',    () => this._insertText());
+        document.getElementById('btnDetectFonts').addEventListener('click', () => this._detectSystemFonts());
         document.getElementById('applyCss').addEventListener('click',    () => this._applyCSS());
         
         document.getElementById('saveImage').addEventListener('click', () => {
