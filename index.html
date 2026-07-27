@@ -172,7 +172,7 @@
 
     .modal-overlay {
         display: none; position: fixed; inset: 0;
-        background: rgba(0,0,0,0.55); z-index: 999;
+        background: rgba(0,0,0,0.11); z-index: 999;
         align-items: center; justify-content: center;
     }
     .modal-overlay.open { display: flex; }
@@ -235,8 +235,8 @@
         padding-top: 2px;
         padding-left: 2px;
     }
-    #align-canvas {
-        margin-right:22px;
+    #align-canvas, #show-toolbox {
+        margin-right:12px;
     }
 
     #dock {
@@ -452,6 +452,7 @@
     </select>
     <button id="btnResize">Apply</button>
         <div style="margin-left: auto;">
+        <label for="show-toolbox">Toolbox:</label> <input type="checkbox" name="show-toolbox" id="show-toolbox" checked />
         <label for="align-canvas">Centered:</label> <input type="checkbox" name="align-canvas" id="align-canvas" checked />
         <label for="preview-canvas">Preview:</label>  <input type="checkbox" name="preview-canvas" id="preview-canvas" checked />
         </div>
@@ -2158,7 +2159,7 @@ _drawPixelOutline(ctx, pixels, layer) {
         const cv = this.mainCanvas;
         cv.addEventListener('contextmenu', e => e.preventDefault());
 
-        // Align canvas
+        // Align canvas?
         let align = document.getElementById('align-canvas');
         align.addEventListener('click', (e) => {
             let alignCanvas = document.getElementById('align-canvas');
@@ -2171,6 +2172,7 @@ _drawPixelOutline(ctx, pixels, layer) {
                 }  
         });
 
+        // Show preview?
         let preview = document.getElementById('preview-canvas');
         preview.addEventListener('click', (e) => {
             let alignCanvas = document.getElementById('preview-canvas');
@@ -2178,6 +2180,17 @@ _drawPixelOutline(ctx, pixels, layer) {
                 document.getElementById('thumbnail-canvas').style.display = 'none';
                 } else {
                 document.getElementById('thumbnail-canvas').style.display = 'block';
+                }  
+        });
+
+        // Show toolbox?
+        let toolbox = document.getElementById('show-toolbox');
+        toolbox.addEventListener('click', (e) => {
+            let alignCanvas = document.getElementById('show-toolbox');
+                if(alignCanvas.checked != true) {
+                document.getElementById('dock').style.display = 'none';
+                } else {
+                document.getElementById('dock').style.display = 'block';
                 }  
         });
 
