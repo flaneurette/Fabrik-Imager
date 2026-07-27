@@ -892,7 +892,7 @@
         nl.x = this.activeLayer.x;
         nl.y = this.activeLayer.y;
     
-        nl.ctx.strokeStyle = document.getElementById('brushcolor').value || '#000000';
+        nl.ctx.strokeStyle = document.getElementById('colorPicker').value || '#000000';
         nl.ctx.lineWidth = Math.max(1, parseInt(document.getElementById('brushsize').value) || 2);
     
         const shapeData = this.shapeTemplates[value];
