@@ -1723,49 +1723,103 @@ _drawPixelOutline(ctx, pixels, layer) {
             }
         }
         
-        _cutSelection() {
-            console.log('CUT called. sel:', this.sel, 'selCircle:', this.selCircle, 'activeLayer:', this.activeLayer?.name);
-            this.saveState();
-            const l = this.activeLayer; if (!l) { console.log('no active layer'); return; }
-            this._copySelection();
-            console.log('clipboard after copy:', this.clipboard);
-        
-            if (this.selCircle && (this.selCircle.rx > 0 || this.selCircle.ry > 0)) {
-                console.log('cutting ellipse');
-                const {cx, cy, rx, ry} = this.selCircle;
-                l.ctx.save();
-                l.ctx.globalCompositeOperation = 'destination-out';
-                l.ctx.beginPath();
-                l.ctx.ellipse(cx - l.x, cy - l.y, rx, ry, 0, 0, Math.PI * 2);
-                l.ctx.fill();
-                l.ctx.restore();
-                this.selCircle = null;
-            } else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
-                console.log('cutting rect');
-                l.ctx.clearRect(this.sel.x - l.x, this.sel.y - l.y, this.sel.w, this.sel.h);
-                this.sel = null;
-            } else if (this.magicWandSelection) {
-                const { x, y, layerX, layerY, width, height } = this.magicWandSelection;
-                const imageData = l.ctx.getImageData(layerX, layerY, width, height);
-                const data = imageData.data;
-                
-                // Clear only the selected pixels
-                this.magicWandSelection.pixels.forEach(pixelKey => {
-                    const [px, py] = pixelKey.split(',').map(Number);
-                    const idx = ((py - layerY) * width + (px - layerX)) * 4;
-                    if (idx >= 0 && idx < data.length) {
-                        data[idx + 3] = 0; // set alpha to 0 (transparent)
-                    }
-                });
-                
-                l.ctx.putImageData(imageData, layerX, layerY);
-                this.magicWandSelection = null;
-            } else {
-                console.log('NEITHER selection matched — nothing cut');
-            }
+ _cutSelection() {
+    console.log('CUT called. Selection state:',
+        'selCircle:', this.selCircle,
+        'sel:', this.sel,
+        'magicWand:', this.magicWandSelection,
+        'activeLayer:', this.activeLayer?.name,
+        'zoomLevel:', this.zoomLevel);
 
-            this._deselect();
+    this.saveState();
+    const l = this.activeLayer;
+    if (!l) {
+        console.log('ERROR: No active layer for cut operation');
+        return;
+    }
+
+    // First handle ellipse cut
+    if (this.selCircle && this.selCircle.rx > 0 && this.selCircle.ry > 0) {
+        console.log('Cutting ellipse at:',
+            'cx:', this.selCircle.cx,
+            'cy:', this.selCircle.cy,
+            'rx:', this.selCircle.rx,
+            'ry:', this.selCircle.ry,
+            'layer offset:', l.x, l.y);
+
+        try {
+            l.ctx.save();
+            l.ctx.globalCompositeOperation = 'destination-out';
+            l.ctx.beginPath();
+            l.ctx.ellipse(
+                this.selCircle.cx - l.x,
+                this.selCircle.cy - l.y,
+                this.selCircle.rx,
+                this.selCircle.ry,
+                0, 0, Math.PI * 2
+            );
+            l.ctx.fill();
+            l.ctx.restore();
+            this.selCircle = null;
+        } catch (e) {
+            console.error('Error cutting ellipse:', e);
         }
+    }
+    // Then handle rectangle cut - FIXED VERSION
+    else if (this.sel && this.sel.w > 0 && this.sel.h > 0) {
+        console.log('Cutting rectangle with:',
+            'x:', this.sel.x,
+            'y:', this.sel.y,
+            'w:', this.sel.w,
+            'h:', this.sel.h,
+            'layer offset:', l.x, l.y,
+            'zoom adjusted:', this.sel.x - l.x, this.sel.y - l.y);
+
+        // Verify the rectangle is valid
+        if (isNaN(this.sel.x) || isNaN(this.sel.y) ||
+            isNaN(this.sel.w) || isNaN(this.sel.h)) {
+            console.error('Invalid rectangle coordinates:', this.sel);
+            return;
+        }
+
+        // Clear with zoom-adjusted coordinates
+        l.ctx.save();
+        l.ctx.globalCompositeOperation = 'destination-out';
+        l.ctx.clearRect(
+            this.sel.x - l.x,
+            this.sel.y - l.y,
+            this.sel.w,
+            this.sel.h
+        );
+        l.ctx.restore();
+
+        this.sel = null;
+    }
+    // Magic wand is already working
+    else if (this.magicWandSelection) {
+        console.log('Cutting magic wand selection');
+        const { layerX, layerY, width, height } = this.magicWandSelection;
+        const imageData = l.ctx.getImageData(layerX, layerY, width, height);
+        const data = imageData.data;
+
+        this.magicWandSelection.pixels.forEach(pixelKey => {
+            const [px, py] = pixelKey.split(',').map(Number);
+            const idx = ((py - layerY) * width + (px - layerX)) * 4;
+            if (idx >= 0 && idx < data.length) {
+                data[idx + 3] = 0;
+            }
+        });
+
+        l.ctx.putImageData(imageData, layerX, layerY);
+        this.magicWandSelection = null;
+    }
+    else {
+        console.log('ERROR: No valid selection found for cutting');
+        return;
+    }
+
+    this._deselect();
+}
 
         _mergeLayers() {
             this.saveState();
