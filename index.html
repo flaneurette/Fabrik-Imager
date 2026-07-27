@@ -306,26 +306,16 @@
     <div class="tool-btn" data-tool="text"         title="Text (T)">T</div>
     <div class="tool-btn" data-tool="rotate"       title="Rotate Layer (R)">↻</div>
     <div class="toolbar-sep"></div>
+    <div>LAYER:</div>
+    <div class="toolbar-sep"></div>
     <label title="Foreground color"><input type="color" id="colorPicker" class="color-picker" value="#000000">
     </label>
     <div class="toolbar-sep"></div>
     <button class="tb-btn" id="btnZoomIn"  title="Zoom In (+)">+</button>
     <button class="tb-btn" id="btnZoomOut" title="Zoom Out (-)">-</button>
     <div class="toolbar-sep"></div>
-        <select id="shapeDropdown">
-            <option value="">-- Shapes --</option>
-            <option value="line">Line</option>
-            <option value="box">Rectangle</option>
-            <option value="arrow">Arrow</option>
-            <option value="circle">Circle</option>
-            <option value="triangle">Triangle</option>
-            <option value="star">Star</option>
-            <option value="pentagram">Pentagram</option>
-        </select>
-
-    <div class="toolbar-sep"></div>
-    <small>Layer:</small><input type="text" id="resizePercent" class="quality-slider" min="1" max="1000" value="100" size="3" title="Resize layer percentage">%
-    <button class="tb-btn" id="btnResizeLayer" title="Resize active layer">Resize L</button>
+    <input type="text" id="resizePercent" class="quality-slider" min="1" max="1000" value="100" size="3" title="Resize layer percentage">%
+    <button class="tb-btn" id="btnResizeLayer" title="Resize active layer">Resize</button>
     <select class="tb-btn" id="effects"  title="Effects">
         <option value="" class="option-sep">Layer effect</option>
         <option value="fliph">Flip Horizontal</option>
@@ -370,6 +360,12 @@
         <option value="sawtooth">Sawtooth</option>
     </select>
     <!-- <button class="tb-btn" id="btnEffectsEditor" title="Open effect editor">Effect editor</button> -->
+
+    <div class="toolbar-sep"></div>
+    <select id="shapeDropdown">
+      <option value="">-- Shapes --</option>
+    </select>
+
     </div>
 
     <!-- MIDDLE -->
@@ -3312,6 +3308,7 @@ _drawPixelOutline(ctx, pixels, layer) {
                     case 'o': e.preventDefault(); this._openFile();       break;
                     case 's': e.preventDefault(); this._saveFile();       break;
                     case 'c': e.preventDefault(); this._copySelection();  break;
+                    case 'i': e.preventDefault(); this._minimalEffect("invert", this.activeLayer); break;
                     case 'v': e.preventDefault(); this._pasteClipboard(); break;
                     case 'x': e.preventDefault(); this._cutSelection();   break;
                     case 'z': e.preventDefault(); this.undo();            break;
