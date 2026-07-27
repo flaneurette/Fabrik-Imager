@@ -9,98 +9,100 @@
    * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
     body { background: #2b2b2b; overflow: hidden; user-select: none; }
     .editor-container { display: flex; flex-direction: column; height: 100vh; }
-
-    /* TOOLBAR */
-    .toolbar {
-        background: #222;
-        border-bottom: 1px solid #222;
-        padding: 5px 10px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-shrink: 0;
-        color: #666;
-        font-size: 13px;
-        text-transform: capitalize;
-    }
-    .tool-btn {
-        width: 28px; height: 28px;
-        background: #333;
-        border: 0px solid #666;
-        border-radius: 4px;
-        color: #ddd;
-        font-size: 14px;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer;
-    }
-    .layer-move, .layer-delete {
-        width: 18px; height: 18px;
-        background: #333;
-        border: 1px solid #666;
-        border-radius: 4px;
-        padding: 10px;
-        color: #ddd;
-        font-size: 12px;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer;
-    }
-    #fontFaces {
-        background: #333;
-        border: 1px solid #666;
-        border-radius: 4px;
-        color: #ddd;
-        padding:5px;
-        display: block;
-    }
-
-    #fontFaces {
-        background: #333;
-        border: 1px solid #666;
-        border-radius: 4px;
-        color: #ddd;
-        padding:5px;
-        display: block;
-    }
-    .tool-btn:hover { background: #111; }
-    .tool-btn.active { background: #00cc58; border-color: #00cc58; color: #fff; }
-    .toolbar-sep { width: 1px; height: 28px; background: #323232; margin: 0 4px; }
-    .color-picker { width: 31px; height: 34px; border: none; cursor: pointer; background: none; }
-    #inputW, #inputH, .quality-slider { background: #000; color: #fff; width: 45px; cursor: pointer; padding:5px; border: 0px solid black; }
-    #presetSize { background: #000; color: #fff; cursor: pointer; padding:5px; border: 0px solid black; }
-    .quality-value { color: #333; font-size: 12px; min-width: 15px; }
-    .tb-btn {
-        padding: 5px 10px; background: #333; color: #999;
-        border: none; border-radius: 4px; cursor: pointer; font-size: 14px;
-
-    }
-    .tb-btn:hover { background: #444; }
     
-    /* MIDDLE */
-    .middle-row { display: flex; flex: 1; overflow: hidden; }
-
-    /* WORK AREA */
-    .workarea-column { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-    .workarea-bar {
-        background: #444; padding: 5px 10px;
-        display: flex; align-items: center; gap: 6px;
-        border-bottom: 1px solid #222; font-size: 12px; color: #ccc;
-    }
-    .workarea-bar input[type=number] {
-        width: 58px; padding: 3px 5px; background: #555;
-        border: 1px solid #666; border-radius: 3px; color: #fff; font-size: 12px;
-    }
-    .workarea-bar button {
-        padding: 3px 8px; background: #666; color: #fff;
-        border: none; border-radius: 3px; cursor: pointer; font-size: 12px;
-    }
-    .workarea-bar button:hover { background: #666; }
-    .canvas-scroll {
-        flex: 1; overflow: auto; background: #1e1e1e;
-        display: flex; align-items: flex-start; justify-content: flex-start; padding: 20px;
-    }
-    .canvas-wrapper {
-        position: relative; display: inline-block;
-        box-shadow: 0 0 0 1px #555, 0 4px 20px rgba(0,0,0,0.6);
+        /* TOOLBAR */
+        .toolbar {
+            background: #222;
+            border-bottom: 1px solid #222;
+            padding: 5px 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            color: #666;
+            font-size: 13px;
+            text-transform: capitalize;
+        }
+        .tool-btn {
+            width: 28px; height: 28px;
+            background: #333;
+            border: 0px solid #666;
+            border-radius: 4px;
+            color: #ddd;
+            font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .layer-move, .layer-delete {
+            width: 18px; height: 18px;
+            background: #333;
+            border: 1px solid #666;
+            border-radius: 4px;
+            padding: 10px;
+            color: #ddd;
+            font-size: 12px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        #fontFaces {
+            background: #333;
+            border: 1px solid #666;
+            border-radius: 4px;
+            color: #ddd;
+            padding:5px;
+            display: block;
+        }
+    
+        #fontFaces {
+            background: #333;
+            border: 1px solid #666;
+            border-radius: 4px;
+            color: #ddd;
+            padding:5px;
+            display: block;
+        }
+        .tool-btn:hover { background: #111; }
+        .tool-btn.active { background: #00cc58; border-color: #00cc58; color: #fff; }
+        .toolbar-sep { width: 1px; height: 28px; background: #323232; margin: 0 4px; }
+        .color-picker { width: 31px; height: 34px; border: none; cursor: pointer; background: none; }
+        #inputW, #inputH, .quality-slider { background: #000; color: #fff; width: 45px; cursor: pointer; padding:5px; border: 0px solid black; }
+        #presetSize { background: #000; color: #fff; cursor: pointer; padding:5px; border: 0px solid black; }
+        .quality-value { color: #333; font-size: 12px; min-width: 15px; }
+        .tb-btn {
+            padding: 5px 10px; background: #333; color: #999;
+            border: none; border-radius: 4px; cursor: pointer; font-size: 14px;
+    
+        }
+        .tb-btn:hover { background: #444; }
+        
+        /* MIDDLE */
+        .middle-row { display: flex; flex: 1; overflow: hidden; }
+    
+        /* WORK AREA */
+        .workarea-column { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+        .workarea-bar {
+            background: #444; padding: 5px 10px;
+            display: flex; align-items: center; gap: 6px;
+            border-bottom: 1px solid #222; font-size: 12px; color: #ccc;
+        }
+        .workarea-bar input[type=number] {
+            width: 58px; padding: 3px 5px; background: #555;
+            border: 1px solid #666; border-radius: 3px; color: #fff; font-size: 12px;
+        }
+        .workarea-bar button {
+            padding: 3px 8px; background: #666; color: #fff;
+            border: none; border-radius: 3px; cursor: pointer; font-size: 12px;
+        }
+        .workarea-bar button:hover { background: #666; }
+        .canvas-scroll {
+            flex: 1; overflow: auto; background: #1e1e1e;
+            display: flex; align-items: flex-start; justify-content: flex-start; padding: 20px;
+        }
+        .canvas-wrapper {
+            position: relative; display: inline-block;
+            box-shadow: 0 0 0 1px #555, 0 4px 20px rgba(0,0,0,0.6);
+            position: relative;
+            left: 111px;
     }
     #main-canvas { display: block; background: #fff; cursor: crosshair; }
     .canvas-wrapper::before {
@@ -236,11 +238,55 @@
     #align-canvas {
         margin-right:22px;
     }
+
+    #dock {
+        z-index: 999;
+        position: absolute;
+        left: 16px;
+        top: 99px;
+        border-radius: 5px;
+        background-color: #2e2d2d;
+        padding: 3px;
+        border: 1px solid #444;
+    }
+    .dock-item {
+        width: 96%;
+        text-align:left;
+        padding: 10px;
+        margin: 3px;
+        background: #333;
+        border: 0px solid #666;
+        border-radius: 4px;
+        color: #ddd;
+        font-size: 14px;
+        display: block;
+        cursor: pointer;
+        color: #888;
+        font-size: 12px;
+    }
+
+    .dock-item:hover { background: #111; }
+    .dock-item.active { background: #4ebc7d; border-color: #4ebc7d; color: #1a5b36; }
+
     </style>
     </head>
     <body>
     <div class="editor-container">
 
+    <!-- DOCK -->
+
+    <div class="dock" id="dock">
+        <div class="dock-item" title="">TOOLBOX</div>
+        <div class="dock-item" data-tool="brush" title="Draw with brush">Brush</div>
+        <div class="dock-item" data-tool="wand" title="Magic wand">Wand</div>
+        <div class="dock-item" data-tool="select" title="Rect Select (S)">Rectangle</div>
+        <div class="dock-item" data-tool="selectcircle"  title="Ellipse Select (C)">Ellipse</div>
+        <div class="dock-item" data-tool="eraser" title="Eraser (E)">Eraser</div>
+        <div class="dock-item" data-tool="fill"  title="Fill (F)">Fill</div>
+        <div class="dock-item" data-tool="text" title="Text (T)">Text</div>
+        <div class="dock-item" data-tool="rotate" title="Rotate Layer (R)">Rotate</div>
+    </div>
+    
     <!-- TOOLBAR -->
     <div class="toolbar">
     <div>F /\ B R I K.</div>
@@ -272,7 +318,7 @@
     </select>
     <input type="color" id="brushcolor" class="color-picker" value="#000000">
     <div class="toolbar-sep"></div>
-    <div class="tool-btn" data-tool="wand" title="Magic wand...">🪄</div>
+    <div class="tool-btn" data-tool="wand" title="Magic wand">🪄</div>
     <div class="tool-btn active" data-tool="pointer" title="Pointer (V) to drag...">✥</div>
     <div class="tool-btn" data-tool="select"       title="Rect Select (S)">⬚</div>
     <div class="tool-btn" data-tool="selectcircle" id="tb-circle" title="Ellipse Select (C)">⭘</div>
@@ -2096,6 +2142,7 @@ _drawPixelOutline(ctx, pixels, layer) {
         // center canvas by default
         document.getElementById('canvasWrapper').style.margin = '0 auto';
         document.getElementById('thumbnail-canvas').style.display = 'block';
+        document.getElementById('canvasWrapper').style.left = '-111px';
 
         const cv = this.mainCanvas;
         cv.addEventListener('contextmenu', e => e.preventDefault());
@@ -2106,8 +2153,10 @@ _drawPixelOutline(ctx, pixels, layer) {
             let alignCanvas = document.getElementById('align-canvas');
                 if(alignCanvas.checked != true) {
                 document.getElementById('canvasWrapper').style.margin = '0';
+                document.getElementById('canvasWrapper').style.left = '111px';
                 } else {
                 document.getElementById('canvasWrapper').style.margin = '0 auto';
+                document.getElementById('canvasWrapper').style.left = '-111px';
                 }  
         });
 
@@ -3200,9 +3249,9 @@ _drawPixelOutline(ctx, pixels, layer) {
     }
 
     _bindToolbar() {
-        document.querySelectorAll('.tool-btn').forEach(btn => {
+        document.querySelectorAll('.tool-btn, .dock-item').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tool-btn, .dock-item').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.tool = btn.dataset.tool;
                 this._stopContinuousRotate();
@@ -3214,6 +3263,7 @@ _drawPixelOutline(ctx, pixels, layer) {
                 this.mainCanvas.style.cursor = cursors[this.tool] || 'crosshair';
             document.getElementById('statusTool').textContent = `Tool: ${btn.title.split(' (')[0]}`;
         });
+
     });
 
     document.getElementById('shapeDropdown').addEventListener('change', e => {
@@ -3271,7 +3321,6 @@ _drawPixelOutline(ctx, pixels, layer) {
 
     _bindKeys() {
 
-        
         document.addEventListener('keydown', e => {
         
             if (document.getElementById('textModal').classList.contains('open')) return;
@@ -3316,8 +3365,9 @@ _drawPixelOutline(ctx, pixels, layer) {
     }
 
     _bindUI() {
+
         document.getElementById('btnOpen').addEventListener('click', () => this._openFile());
-    document.getElementById('btnImport').addEventListener('click', () => this._importFile());
+        document.getElementById('btnImport').addEventListener('click', () => this._importFile());
         
         document.getElementById('btnResize').addEventListener('click', () => {
             const w = parseInt(document.getElementById('inputW').value);
