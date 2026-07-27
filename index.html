@@ -322,6 +322,7 @@
             <option value="star">Star</option>
             <option value="pentagram">Pentagram</option>
         </select>
+
     <div class="toolbar-sep"></div>
     <small>Layer:</small><input type="text" id="resizePercent" class="quality-slider" min="1" max="1000" value="100" size="3" title="Resize layer percentage">%
     <button class="tb-btn" id="btnResizeLayer" title="Resize active layer">Resize L</button>
@@ -701,37 +702,143 @@
             this.isDrawing = false;
             this.lastPos = {};
 
-           this.shapeTemplates = {
+            this.shapeTemplates = {
                 // Basic shapes
-                line: [
-                    {x: 0, y: 0}, {x: 20, y: 0}  // Straight line
-                ],
-                box: [
-                    {x: 0, y: 0}, {x: 20, y: 0}, {x: 20, y: 20}, {x: 0, y: 20}, {x: 0, y: 0}
-                ],
-                triangle: [
-                    {x: 10, y: 0}, {x: 0, y: 20}, {x: 20, y: 20}, {x: 10, y: 0}
-                ],
+                line: {
+                    points: [{x: 0, y: 0}, {x: 20, y: 0}],
+                    smooth: false
+                },
+                box: {
+                    points: [
+                        {x: 0, y: 0}, {x: 20, y: 0}, {x: 20, y: 20}, {x: 0, y: 20}, {x: 0, y: 0}
+                    ],
+                    smooth: false
+                },
+                triangle: {
+                    points: [
+                        {x: 10, y: 0}, {x: 0, y: 20}, {x: 20, y: 20}, {x: 10, y: 0}
+                    ],
+                    smooth: false
+                },
             
                 // Advanced shapes
-                circle: Array.from({length: 16}, (_, i) => ({
-                    x: 10 + 10 * Math.cos(i * Math.PI / 8),
-                    y: 10 + 10 * Math.sin(i * Math.PI / 8)
-                })),
-                star: Array.from({length: 10}, (_, i) => ({
-                    x: 10 + (i % 2 === 0 ? 10 : 5) * Math.cos(i * Math.PI / 5),
-                    y: 10 + (i % 2 === 0 ? 10 : 5) * Math.sin(i * Math.PI / 5)
-                })),
-                pentagram: Array.from({length: 5}, (_, i) => ({
-                    x: 10 + 10 * Math.cos(i * 4 * Math.PI / 5),
-                    y: 10 + 10 * Math.sin(i * 4 * Math.PI / 5)
-                })),
-                arrow: [
-                    {x: 0, y: 10}, {x: 15, y: 10}, {x: 15, y: 5}, {x: 20, y: 10},
-                    {x: 15, y: 15}, {x: 15, y: 10}, {x: 0, y: 10}
-                ],
+                circle: {
+                    points: Array.from({length: 48}, (_, i) => ({
+                        x: 10 + 10 * Math.cos(i * 2 * Math.PI / 48),
+                        y: 10 + 10 * Math.sin(i * 2 * Math.PI / 48)
+                    })),
+                    smooth: true
+                },
+                star: {
+                    points: Array.from({length: 10}, (_, i) => ({
+                        x: 10 + (i % 2 === 0 ? 10 : 5) * Math.cos(i * Math.PI / 5),
+                        y: 10 + (i % 2 === 0 ? 10 : 5) * Math.sin(i * Math.PI / 5)
+                    })),
+                    smooth: false // sharp points
+                },
+                pentagram: {
+                    points: Array.from({length: 5}, (_, i) => ({
+                        x: 10 + 10 * Math.cos(i * 4 * Math.PI / 5),
+                        y: 10 + 10 * Math.sin(i * 4 * Math.PI / 5)
+                    })),
+                    smooth: false
+                },
+                arrow: {
+                    points: [
+                        {x: 0, y: 10}, {x: 15, y: 10}, {x: 15, y: 5}, {x: 20, y: 10},
+                        {x: 15, y: 15}, {x: 15, y: 10}, {x: 0, y: 10}
+                    ],
+                    smooth: false
+                },
+            
+                // Polygons
+                diamond: {
+                    points: [
+                        {x: 10, y: 0}, {x: 20, y: 10}, {x: 10, y: 20}, {x: 0, y: 10}, {x: 10, y: 0}
+                    ],
+                    smooth: false
+                },
+                pentagon: {
+                    points: Array.from({length: 6}, (_, i) => {
+                        const angle = -Math.PI / 2 + (i % 5) * 2 * Math.PI / 5;
+                        return { x: 10 + 10 * Math.cos(angle), y: 10 + 10 * Math.sin(angle) };
+                    }),
+                    smooth: false
+                },
+                hexagon: {
+                    points: Array.from({length: 7}, (_, i) => {
+                        const angle = (i % 6) * Math.PI / 3;
+                        return { x: 10 + 10 * Math.cos(angle), y: 10 + 10 * Math.sin(angle) };
+                    }),
+                    smooth: false
+                },
+            
+                // Symbols
+                cross: {
+                    points: [
+                        {x: 7, y: 0}, {x: 13, y: 0}, {x: 13, y: 7}, {x: 20, y: 7}, {x: 20, y: 13},
+                        {x: 13, y: 13}, {x: 13, y: 20}, {x: 7, y: 20}, {x: 7, y: 13}, {x: 0, y: 13},
+                        {x: 0, y: 7}, {x: 7, y: 7}, {x: 7, y: 0}
+                    ],
+                    smooth: false
+                },
+                lightning: {
+                    points: [
+                        {x: 12, y: 0}, {x: 4, y: 12}, {x: 9, y: 12}, {x: 6, y: 20},
+                        {x: 16, y: 8}, {x: 11, y: 8}, {x: 12, y: 0}
+                    ],
+                    smooth: false
+                },
+                house: {
+                    points: [
+                        {x: 0, y: 20}, {x: 0, y: 10}, {x: 10, y: 0}, {x: 20, y: 10}, {x: 20, y: 20}, {x: 0, y: 20}
+                    ],
+                    smooth: false
+                },
+                zigzag: {
+                    points: [
+                        {x: 0, y: 0}, {x: 5, y: 20}, {x: 10, y: 0}, {x: 15, y: 20}, {x: 20, y: 0}
+                    ],
+                    smooth: false
+                },
+            
+                // Curves (parametric)
+                heart: {
+                    points: Array.from({length: 41}, (_, i) => {
+                        const t = (i / 40) * 2 * Math.PI;
+                        const hx = 16 * Math.pow(Math.sin(t), 3);
+                        const hy = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+                        return { x: 10 + hx * 0.55, y: 12 - hy * 0.42 };
+                    }),
+                    smooth: true
+                },
+                spiral: {
+                    points: Array.from({length: 80}, (_, i) => {
+                        const t = (i / 80) * 4 * Math.PI;
+                        const r = (i / 80) * 9;
+                        return { x: 10 + r * Math.cos(t), y: 10 + r * Math.sin(t) };
+                    }),
+                    smooth: true,
+                    closed: false // open curve, don't wrap back to start
+                },
+                infinity: {
+                    points: Array.from({length: 64}, (_, i) => {
+                        const t = (i % 64) * 2 * Math.PI / 64;
+                        const denom = 1 + Math.sin(t) ** 2;
+                        return { x: 10 + 9 * Math.cos(t) / denom, y: 10 + 9 * Math.sin(t) * Math.cos(t) / denom };
+                    }),
+                    smooth: true
+                },
+                gear: {
+                    points: Array.from({length: 33}, (_, i) => {
+                        const angle = (i % 32) * Math.PI / 16;
+                        const r = i % 2 === 0 ? 10 : 7;
+                        return { x: 10 + r * Math.cos(angle), y: 10 + r * Math.sin(angle) };
+                    }),
+                    smooth: false // teeth need to stay sharp
+                },
             };
-
+            
             this.textPending = null;
             this.lastX = null;
             this.lastY = null; 
@@ -761,37 +868,48 @@
     
         const nl = this._addLayer(`Shape: ${value}`)
         const l = this.activeLayer;
-
         nl.canvas.width = this.mainCanvas.width;
         nl.canvas.height = this.mainCanvas.height;
         nl.ctx = nl.canvas.getContext('2d');
         nl.x = this.activeLayer.x;
         nl.y = this.activeLayer.y;
     
-        // Set styles
         nl.ctx.strokeStyle = document.getElementById('brushcolor').value || '#000000';
         nl.ctx.lineWidth = Math.max(1, parseInt(document.getElementById('brushsize').value) || 2);
     
-        const template = this.shapeTemplates[value];
-        if (!template) return;
+        const shapeData = this.shapeTemplates[value];
+        if (!shapeData) return;
+        const template = shapeData.points;
     
-        // Scale factor to make shapes ~500px
-        const scale = 25; // Adjust this value to change size
+        const scale = 25;
         const layer = this.activeLayer;
-        const x = 500 - layer.x; // Use mouse position
+        const x = 500 - layer.x;
         const y = 300 - layer.y;
     
-        nl.ctx.beginPath();
-        template.forEach((point, i) => {
-            const px = x + (point.x - 10) * scale; // Center adjustment
-            const py = y + (point.y - 10) * scale;
+        const pts = template.map(point => ({
+            x: x + (point.x - 10) * scale,
+            y: y + (point.y - 10) * scale
+        }));
     
-            if (i === 0) {
-                nl.ctx.moveTo(px, py);
-            } else {
-                nl.ctx.lineTo(px, py);
+        nl.ctx.beginPath();
+        nl.ctx.moveTo(pts[0].x, pts[0].y);
+    
+        if (shapeData.smooth) {
+            // Smooth curve through midpoints
+            for (let i = 1; i < pts.length - 1; i++) {
+                const midX = (pts[i].x + pts[i + 1].x) / 2;
+                const midY = (pts[i].y + pts[i + 1].y) / 2;
+                nl.ctx.quadraticCurveTo(pts[i].x, pts[i].y, midX, midY);
             }
-        });
+            // Handle last segment
+            const last = pts[pts.length - 1];
+            nl.ctx.quadraticCurveTo(last.x, last.y, pts[0].x, pts[0].y);
+        } else {
+            for (let i = 1; i < pts.length; i++) {
+                nl.ctx.lineTo(pts[i].x, pts[i].y);
+            }
+        }
+    
         nl.ctx.closePath();
         nl.ctx.stroke();
         this._refreshLayersPanel();
@@ -3268,6 +3386,16 @@ _drawPixelOutline(ctx, pixels, layer) {
         if (e.key === 'Enter')  this._insertText();
         if (e.key === 'Escape') { this.textPending = null; this._closeTextModal(); }
         });
+
+        // Populate shapes box.
+        let shapeDropdown = document.getElementById('shapeDropdown');
+        Object.keys(this.shapeTemplates).forEach((shape) => {
+            let option = document.createElement('option');
+            option.value = shape;
+            option.textContent = shape.charAt(0).toUpperCase() + shape.slice(1);
+            shapeDropdown.appendChild(option);
+        });
+        
     }
 
     _updateStatus() {
@@ -3572,6 +3700,7 @@ _drawPixelOutline(ctx, pixels, layer) {
             return {minX, minY, maxX, maxY};
         }
     }
+
     </script>
     </body>
     </html>
