@@ -759,12 +759,18 @@
     _drawShape(value) {
         this.saveState();
     
-        const ctx = this.activeLayer?.ctx;
-        if (!ctx) return;
+        const nl = this._addLayer(`Shape: ${value}`)
+        const l = this.activeLayer;
+
+        nl.canvas.width = this.mainCanvas.width;
+        nl.canvas.height = this.mainCanvas.height;
+        nl.ctx = nl.canvas.getContext('2d');
+        nl.x = this.activeLayer.x;
+        nl.y = this.activeLayer.y;
     
         // Set styles
-        ctx.strokeStyle = document.getElementById('brushcolor').value || '#000000';
-        ctx.lineWidth = Math.max(1, parseInt(document.getElementById('brushsize').value) || 2);
+        nl.ctx.strokeStyle = document.getElementById('brushcolor').value || '#000000';
+        nl.ctx.lineWidth = Math.max(1, parseInt(document.getElementById('brushsize').value) || 2);
     
         const template = this.shapeTemplates[value];
         if (!template) return;
@@ -775,20 +781,20 @@
         const x = 500 - layer.x; // Use mouse position
         const y = 300 - layer.y;
     
-        ctx.beginPath();
+        nl.ctx.beginPath();
         template.forEach((point, i) => {
             const px = x + (point.x - 10) * scale; // Center adjustment
             const py = y + (point.y - 10) * scale;
     
             if (i === 0) {
-                ctx.moveTo(px, py);
+                nl.ctx.moveTo(px, py);
             } else {
-                ctx.lineTo(px, py);
+                nl.ctx.lineTo(px, py);
             }
         });
-        ctx.closePath();
-        ctx.stroke();
-    
+        nl.ctx.closePath();
+        nl.ctx.stroke();
+        this._refreshLayersPanel();
         this._render();
     }
 
