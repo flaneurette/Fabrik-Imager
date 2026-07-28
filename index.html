@@ -551,9 +551,11 @@
     </select>
     <button id="btnResize">Apply</button>
         <div style="margin-left: auto;">
+        UX:
         <label for="show-toolbox">Toolbox:</label> <input type="checkbox" name="show-toolbox" id="show-toolbox" checked />
         <label for="align-canvas">Centered:</label> <input type="checkbox" name="align-canvas" id="align-canvas" checked />
         <label for="preview-canvas">Preview:</label>  <input type="checkbox" name="preview-canvas" id="preview-canvas" checked />
+        <label for="ux-contrast">Contrast:</label>  <input type="checkbox" name="ux-contrast" id="ux-contrast" />
         </div>
     </div>
     <div class="canvas-scroll" id="canvasScroll">
@@ -2314,6 +2316,25 @@ _drawPixelOutline(ctx, pixels, layer) {
                 document.getElementById('thumbnail-canvas').style.display = 'none';
                 } else {
                 document.getElementById('thumbnail-canvas').style.display = 'block';
+                }  
+        });
+
+        // UX contrast?
+        let contrast = document.getElementById('ux-contrast');
+        contrast.addEventListener('click', (e) => {
+            let contrast = document.getElementById('ux-contrast');
+                if(contrast.checked != true) {
+                    const allElements = document.querySelectorAll('body *');
+                    // Apply styles to each element
+                    allElements.forEach(element => {
+                        element.style.color = '#999';
+                    });
+                } else {
+                    const allElements = document.querySelectorAll('body *');
+                    // Apply styles to each element
+                    allElements.forEach(element => {
+                        element.style.color = '#fff';
+                    });
                 }  
         });
 
