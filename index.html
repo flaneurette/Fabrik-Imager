@@ -268,6 +268,57 @@
     .dock-item:hover { background: #111; }
     .dock-item.active { background: #4d934f; border-color: #4ebc7d; color: #1a5b36; }
 
+    #dock-brush, #dock-wand, #dock-eraser, #dock-fill {
+        display: none;
+        color: #ddd;
+        font-size: 12px;
+        height:30px;
+    }
+    #dock .color-picker {
+        width: 22px;
+        height: 23px;
+        border: none;
+        cursor: pointer;
+        background: none;
+    }
+
+    #dock label {
+        margin-left:4px;
+    }
+
+    #dock select, #dock input[type="text"], #dock input[type="number"]  {
+        line-height: 22px;
+        top: -4px;
+        position: relative;
+        background: #333;
+        border: 0px solid #666;
+        border-radius: 4px;
+        color: #ddd;
+        outline: none;
+    }
+    #wand-dock-tolerance {
+            top: 2px !important;
+            position: relative;
+            background: #333;
+            /* border: 0px solid #666; */
+            /* border-radius: 4px; */
+            color: #ddd;
+            outline: none;
+            width: 36px;
+            padding: 2px;
+    } 
+
+    #eraser-dock-size {
+        width: 36px;
+        top: 2px !important;
+        padding: 2px;
+    }
+
+    #dock-fill-picker {
+        position: relative;
+        top: 4px;
+    }
+
     </style>
     </head>
     <body>
@@ -278,11 +329,59 @@
     <div class="dock" id="dock">
         <div class="dock-item" title="">TOOLBOX</div>
         <div class="dock-item" data-tool="brush" title="Draw with brush">Brush</div>
+
+        <div id="dock-brush">
+            <select name="brushtype" title="Brush type" id="brushtype-dock">
+                <option value="1">Round</option>
+                <option value="2">Square</option>
+                <option value="3">Spray</option>
+                <option value="4">Rand</option>
+            </select>
+            <select name="brushsize" title="Brush size" id="brushsize-dock">
+                <option value="0">Select</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="16">16</option>
+                <option value="17">17</option>
+                <option value="18">18</option>
+                <option value="19">19</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+                <option value="40">40</option>
+                <option value="50">50</option>
+            </select>
+            <input type="color" id="brushcolor-dock" class="color-picker" value="#000000">
+        </div>
+
         <div class="dock-item" data-tool="wand" title="Magic wand">Wand</div>
+        <div id="dock-wand">
+        <label>Tolerance:</label>
+        <input type="text" id="wand-dock-tolerance" min="0" max="150" value="20">
+        </div>
         <div class="dock-item" data-tool="select" title="Rect Select (S)">Rectangle</div>
         <div class="dock-item" data-tool="selectcircle"  title="Ellipse Select (C)">Ellipse</div>
         <div class="dock-item" data-tool="eraser" title="Eraser (E)">Eraser</div>
+        <div id="dock-eraser">
+        <label>Size:</label>
+        <input type="text" id="eraser-dock-size" value="5">
+        </div>
         <div class="dock-item" data-tool="fill"  title="Fill (F)">Fill</div>
+        <div id="dock-fill">
+            <label>Color: </label><input type="color" id="dock-fill-picker" class="color-picker" value="#000000">
+        </div>
         <div class="dock-item" data-tool="text" title="Text (T)">Text</div>
         <div class="dock-item" data-tool="rotate" title="Rotate Layer (R)">Rotate</div>
     </div>
@@ -964,9 +1063,44 @@
         const ctx = layer.ctx;
         const { x: cx, y: cy } = this._canvasXY(e);
         const x = cx - layer.x, y = cy - layer.y;
-        let brushType = document.getElementById('brushtype').value || 1;
-        let brushColor = document.getElementById('brushcolor').value || '#000000'; 
-        let brushSize = document.getElementById('brushsize').value || 1; // Default brush size
+
+        function syncBrushSettings() {
+
+            let useDock = false;
+
+            if (window.getComputedStyle(document.getElementById('dock-brush')).display === 'block') {
+                useDock = true;
+            }
+            
+            let brushType, brushColor, brushSize;
+        
+            if (useDock) {
+                // Get values from dock
+                brushType = document.getElementById('brushtype-dock').value || '1';
+                brushColor = document.getElementById('brushcolor-dock').value || '#000000';
+                brushSize = document.getElementById('brushsize-dock').value || '1';
+        
+                // Sync to top menu
+                document.getElementById('brushtype').value = brushType;
+                document.getElementById('brushcolor').value = brushColor;
+                document.getElementById('brushsize').value = brushSize;
+            } else {
+                // Get values from top menu
+                brushType = document.getElementById('brushtype').value || '1';
+                brushColor = document.getElementById('brushcolor').value || '#000000';
+                brushSize = document.getElementById('brushsize').value || '1';
+        
+                // Sync to dock
+                document.getElementById('brushtype-dock').value = brushType;
+                document.getElementById('brushcolor-dock').value = brushColor;
+                document.getElementById('brushsize-dock').value = brushSize;
+            }
+        
+            return { brushType, brushColor, brushSize };
+        }
+
+        const { brushType, brushColor, brushSize } = syncBrushSettings();
+
         switch(brushType) {
             case '1':
                 ctx.beginPath();
@@ -2281,6 +2415,13 @@ _drawPixelOutline(ctx, pixels, layer) {
         break;
 
         case 'fill': {
+
+            let useDock = false;
+
+            if (window.getComputedStyle(document.getElementById('dock-fill')).display === 'block') {
+                this.color = document.getElementById('dock-fill-picker').value;
+            }
+
             const l = this.activeLayer; if (!l) return;
             this._ensureLayerFlattened(l);
             const px = x - l.x, py = y - l.y;
@@ -2429,7 +2570,16 @@ _drawPixelOutline(ctx, pixels, layer) {
         const { x, y } = this._canvasXY(e);
         const l = this.activeLayer; if (!l) return;
         const px = x - l.x, py = y - l.y;
-        const s  = document.getElementById('brushsize').value || this.eraserSize;
+
+        const brushDock = document.getElementById('dock-eraser');
+        const isVisible = window.getComputedStyle(brushDock).display === 'block';
+        let s = null;
+        if(isVisible) { 
+            s = document.getElementById('eraser-dock-size').value || this.eraserSize;
+            } else {
+            s  = document.getElementById('brushsize').value || this.eraserSize;
+        }
+
         l.ctx.clearRect(px - s/2, py - s/2, s, s);
         this._render();
     }
@@ -2664,9 +2814,9 @@ _drawPixelOutline(ctx, pixels, layer) {
         this._replaceColorOriginal.getContext('2d').drawImage(layer.canvas, 0, 0);
 
         document.getElementById('replaceColorFrom').value =
-            document.getElementById('brushcolor').value || '#000000';
+        document.getElementById('brushcolor').value || '#000000';
         document.getElementById('replaceColorTo').value =
-            document.getElementById('colorPicker').value || this.color || '#000000';
+        document.getElementById('colorPicker').value || this.color || '#000000';
         document.getElementById('replaceColorTolerance').value = 20;
         document.getElementById('replaceColorToleranceVal').textContent = '20';
         document.getElementById('replaceColorKeepAlpha').checked = true;
@@ -3273,9 +3423,9 @@ _drawPixelOutline(ctx, pixels, layer) {
     }
 
     _bindToolbar() {
-        document.querySelectorAll('.tool-btn, .dock-item').forEach(btn => {
+        document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.tool-btn, .dock-item').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 this.tool = btn.dataset.tool;
                 this._stopContinuousRotate();
@@ -3285,10 +3435,48 @@ _drawPixelOutline(ctx, pixels, layer) {
                     eraser: 'cell', fill: 'crosshair', text: 'text', rotate: 'grab'
                 };
                 this.mainCanvas.style.cursor = cursors[this.tool] || 'crosshair';
-            document.getElementById('statusTool').textContent = `Tool: ${btn.title.split(' (')[0]}`;
+                document.getElementById('statusTool').textContent = `Tool: ${btn.title.split(' (')[0]}`;
+            
+            });
         });
 
-    });
+        document.querySelectorAll('.dock-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.dock-item').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.tool = btn.dataset.tool;
+                this._stopContinuousRotate();
+                this.rotateActive = false;
+                const cursors = {
+                    pointer: 'default', wand: 'crosshair', brush: 'default', select: 'crosshair', selectcircle: 'crosshair',
+                    eraser: 'cell', fill: 'crosshair', text: 'text', rotate: 'grab'
+                };
+                this.mainCanvas.style.cursor = cursors[this.tool] || 'crosshair';
+                document.getElementById('statusTool').textContent = `Tool: ${btn.title.split(' (')[0]}`;
+
+                // #dock-brush, #dock-wand, #dock-eraser, #dock-fill
+
+                document.getElementById('dock-brush').style.display = 'none';
+                document.getElementById('dock-wand').style.display = 'none';
+                document.getElementById('dock-eraser').style.display = 'none';
+                document.getElementById('dock-fill').style.display = 'none';
+ 
+                switch(this.tool) {
+                    case 'brush':
+                    btn.classList.contains('active') ? document.getElementById('dock-brush').style.display = 'block' :  document.getElementById('dock-brush').style.display = 'none';
+                    break;
+                    case 'wand':
+                    btn.classList.contains('active') ? document.getElementById('dock-wand').style.display = 'block' :  document.getElementById('dock-wand').style.display = 'none';
+                    break;
+                    case 'eraser':
+                    btn.classList.contains('active') ? document.getElementById('dock-eraser').style.display = 'block' :  document.getElementById('dock-eraser').style.display = 'none';
+                    break;
+                    case 'fill':
+                    btn.classList.contains('active') ? document.getElementById('dock-fill').style.display = 'block' :  document.getElementById('dock-fill').style.display = 'none';
+                    break;
+                }
+            });
+        });
 
     document.getElementById('shapeDropdown').addEventListener('change', e => {
         this._drawShape(e.target.value);
@@ -3588,7 +3776,7 @@ _drawPixelOutline(ctx, pixels, layer) {
             this.tolerance = 10;
             this.selectedPixels = new Set();
         }
-    
+
         select(x, y) {
             this.selectedPixels.clear();
     
@@ -3688,6 +3876,11 @@ _drawPixelOutline(ctx, pixels, layer) {
             const queue = [{x, y}];
             const startR = startColor.r, startG = startColor.g, startB = startColor.b;
     
+            let tolerance = document.getElementById('wand-dock-tolerance').value;
+            if(tolerance) {
+                this.tolerance = tolerance;
+            }
+
             if (startColor.a === 0) return;
     
             const seen = new Uint8Array(width * height);
