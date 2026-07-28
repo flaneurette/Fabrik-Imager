@@ -1,4 +1,4 @@
-# Graphicy Imager (Photo editor)
+# Graphicy Photo editor
 
 <img src="Screenshot.png" />
 
