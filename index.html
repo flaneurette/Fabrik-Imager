@@ -235,8 +235,13 @@
         padding-top: 2px;
         padding-left: 2px;
     }
-    #align-canvas, #show-toolbox {
+    #align-canvas, #show-toolbox, #preview-canvas {
         margin-right:12px;
+    }
+
+    .workarea-bar input[type="checkbox"] {
+        position:relative;
+        top:2px;
     }
 
     #dock {
@@ -261,7 +266,6 @@
         font-size: 14px;
         display: block;
         cursor: pointer;
-        color: #888;
         font-size: 12px;
     }
 
@@ -2336,6 +2340,12 @@ _drawPixelOutline(ctx, pixels, layer) {
                         element.style.color = '#fff';
                     });
                 }  
+        });
+
+        const allElements1 = document.querySelectorAll('body *');
+        // Apply styles to each element
+        allElements1.forEach(element => {
+            element.style.color = '#fff';
         });
 
         // Show toolbox?
