@@ -66,7 +66,7 @@
         .toolbar-sep { width: 1px; height: 28px; background: #323232; margin: 0 4px; }
         .color-picker { width: 31px; height: 34px; border: none; cursor: pointer; background: none; }
         #inputW, #inputH, .quality-slider { background: #000; color: #fff; width: 45px; cursor: pointer; padding:5px; border: 0px solid black; }
-        #presetSize { background: #000; color: #fff; cursor: pointer; padding:5px; border: 0px solid black; }
+        #presetSize, #resize-canvas { background: #000; color: #fff; cursor: pointer; padding:5px; border: 0px solid black; }
         .quality-value { color: #333; font-size: 12px; min-width: 15px; }
         .tb-btn {
             padding: 5px 10px; background: #333; color: #999;
@@ -513,6 +513,17 @@
     <span>×</span>
     <input type="text" id="inputH" value="700"  min="1" max="8000">
     <span>px</span>
+    <select name="resize-canvas" id="resize-canvas">
+        <option value="">Resize %...</option>
+        <option value="10">10%</option>
+        <option value="20">20%</option>
+        <option value="25">25%</option>
+        <option value="50">50%</option>
+        <option value="75">75%</option>
+        <option value="125">125%</option>
+        <option value="150">150%</option>
+        <option value="200">200%</option>
+    </select>
     <select id="presetSize" title="Preset canvas sizes">
         <option value="">Preset...</option>
         <optgroup label="Common">
@@ -553,6 +564,7 @@
             <option value="512x512">512 × 512</option>
         </optgroup>
     </select>
+
     <button id="btnResize">Apply</button>
         <div style="margin-left: auto;">
         UX:
@@ -773,11 +785,19 @@
             this.canvas.height = h;
             this.ctx = this.canvas.getContext('2d');
         }
-        resize(w, h) {
+        resize(w, h, percentage = null) {
+
             const old = this.canvas;
             this.canvas = document.createElement('canvas');
-            this.canvas.width  = w;
-            this.canvas.height = h;
+
+            if(percentage) {
+                this.canvas.width  = parseFloat(w / percentage);
+                this.canvas.height = parseFloat(h / percentage);
+                } else {
+                this.canvas.width  = w;
+                this.canvas.height = h;
+            }
+
             this.ctx = this.canvas.getContext('2d');
             this.ctx.drawImage(old, 0, 0);
         }
@@ -1529,79 +1549,94 @@
         this._updateStatus();
     }
 
-_drawSelectionOutline(selection, layer) {
-    const ctx = this.mainCanvas.getContext('2d');
-    ctx.save();
-    ctx.strokeStyle = 'rgba(0, 120, 255, 0.9)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
-
-    if (selection.pixels && selection.pixels.length) {
-        this._drawPixelOutline(ctx, selection.pixels, layer);
-    } else {
-        // Fallback for rectangular selections (e.g. marquee tool)
-        ctx.strokeRect(selection.x, selection.y, selection.width, selection.height);
+    _drawSelectionOutline(selection, layer) {
+        const ctx = this.mainCanvas.getContext('2d');
+        ctx.save();
+        ctx.strokeStyle = 'rgba(0, 120, 255, 0.9)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+    
+        if (selection.pixels && selection.pixels.length) {
+            this._drawPixelOutline(ctx, selection.pixels, layer);
+        } else {
+            // Fallback for rectangular selections (e.g. marquee tool)
+            ctx.strokeRect(selection.x, selection.y, selection.width, selection.height);
+        }
+    
+        ctx.restore();
     }
 
-    ctx.restore();
-}
+    _drawPixelOutline(ctx, pixels, layer) {
+        const pixelSet = new Set(pixels);
+        ctx.beginPath();
+    
+        pixelSet.forEach(pixel => {
+            const [x, y] = pixel.split(',').map(Number);
+            const canvasX = layer.x + x;
+            const canvasY = layer.y + y;
+    
+            if (!pixelSet.has(`${x},${y - 1}`)) {
+                ctx.moveTo(canvasX, canvasY);
+                ctx.lineTo(canvasX + 1, canvasY);
+            }
+            if (!pixelSet.has(`${x},${y + 1}`)) {
+                ctx.moveTo(canvasX, canvasY + 1);
+                ctx.lineTo(canvasX + 1, canvasY + 1);
+            }
+            if (!pixelSet.has(`${x - 1},${y}`)) {
+                ctx.moveTo(canvasX, canvasY);
+                ctx.lineTo(canvasX, canvasY + 1);
+            }
+            if (!pixelSet.has(`${x + 1},${y}`)) {
+                ctx.moveTo(canvasX + 1, canvasY);
+                ctx.lineTo(canvasX + 1, canvasY + 1);
+            }
+        });
+    
+        ctx.stroke();
+    }
+    _resizeCanvas(w, h, percent = null) {
 
-_drawPixelOutline(ctx, pixels, layer) {
-    const pixelSet = new Set(pixels);
-    ctx.beginPath();
-
-    pixelSet.forEach(pixel => {
-        const [x, y] = pixel.split(',').map(Number);
-        const canvasX = layer.x + x;
-        const canvasY = layer.y + y;
-
-        if (!pixelSet.has(`${x},${y - 1}`)) {
-            ctx.moveTo(canvasX, canvasY);
-            ctx.lineTo(canvasX + 1, canvasY);
-        }
-        if (!pixelSet.has(`${x},${y + 1}`)) {
-            ctx.moveTo(canvasX, canvasY + 1);
-            ctx.lineTo(canvasX + 1, canvasY + 1);
-        }
-        if (!pixelSet.has(`${x - 1},${y}`)) {
-            ctx.moveTo(canvasX, canvasY);
-            ctx.lineTo(canvasX, canvasY + 1);
-        }
-        if (!pixelSet.has(`${x + 1},${y}`)) {
-            ctx.moveTo(canvasX + 1, canvasY);
-            ctx.lineTo(canvasX + 1, canvasY + 1);
-        }
-    });
-
-    ctx.stroke();
-}
-    _resizeCanvas(w, h) {
         this.saveState();
     
-        // Resize main canvas
-        this.mainCanvas.width = w;
-        this.mainCanvas.height = h;
+        if(percent) {
+            // Resize main canvas in percentages
+            this._resizecanvasPercent(this.mainCanvas, percent);
+        } else {
+            // Resize main canvas
+            this.mainCanvas.width = w;
+            this.mainCanvas.height = h;
+        }
     
         // Calculate proportional thumbnail dimensions
+        // Use the canvas's actual current dimensions rather than the raw
+        // w/h arguments, since those are (0, 0) on the percent-resize path.
+        const cw = this.mainCanvas.width;
+        const ch = this.mainCanvas.height;
         const maxThumbWidth = 600; // Your desired max thumbnail width
-        const ratio = w / h;
-        const thumbWidth = Math.min(maxThumbWidth, w);
+        const ratio = cw / ch;
+        const thumbWidth = Math.min(maxThumbWidth, cw);
         const thumbHeight = Math.floor(thumbWidth / ratio); 
 
         // Update thumbnail dimensions
         this.thumbCanvas.width = thumbWidth;
         this.thumbCanvas.height = thumbHeight;
-    
-        // Resize all layers
-        this.layers.forEach(l => l.resize(w, h));
-    
-        document.getElementById('statusSize').textContent = `Canvas: ${w} × ${h}`;
         this._render();
+        // Resize all layers
+        if (percent) {
+            this.layers.forEach(l => this._resizeLayerPercent(l, percent));
+        }
+    
+        document.getElementById('statusSize').textContent = `Canvas: ${cw} × ${ch}`;
+
         document.getElementById('thumbnail-box').style.height =thumbWidth /5; 
         document.getElementById('thumbnail-box').style.width = thumbWidth /5; 
 
         document.getElementById('thumbnail-canvas').style.width = thumbWidth /5; 
         document.getElementById('thumbnail-canvas').style.height = ((this.mainCanvas.height / 5) - 5);
+
+        this._refreshLayersPanel();
+        this._render();
     }
 
 
@@ -3339,6 +3374,32 @@ _drawPixelOutline(ctx, pixels, layer) {
     this._render();
     }
 
+    _resizecanvasPercent(c,percent) {
+        this.saveState();
+        
+        const originalWidth = c.width;
+        const originalHeight = c.height;
+
+        const newWidth = Math.round(originalWidth * (percent / 100));
+        const newHeight = Math.round(originalHeight * (percent / 100));
+        
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = originalWidth;
+        tempCanvas.height = originalHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(c, 0, 0);
+
+        c.width = newWidth;
+        c.height = newHeight;
+        c.ctx = c.getContext('2d');
+        
+        c.ctx.drawImage(tempCanvas, 0, 0, newWidth, newHeight);
+        
+        this._render();
+        this._refreshLayersPanel();
+    }
+
+
     _resizeLayerPercent(layer, percent) {
         this.saveState();
         
@@ -3361,7 +3422,6 @@ _drawPixelOutline(ctx, pixels, layer) {
         layer.ctx.drawImage(tempCanvas, 0, 0, newWidth, newHeight);
         
         this._render();
-        this._refreshLayersPanel();
     }
 
     _applyCSS() {
@@ -3535,7 +3595,7 @@ _drawPixelOutline(ctx, pixels, layer) {
             alert("No active layer to resize");
             return;
         }
-        
+
         const percent = parseFloat(document.getElementById('resizePercent').value);
         if (percent <= 0) {
             alert("Percentage must be greater than 0");
@@ -3619,6 +3679,13 @@ _drawPixelOutline(ctx, pixels, layer) {
         document.getElementById('btnImport').addEventListener('click', () => this._importFile());
         
         document.getElementById('btnResize').addEventListener('click', () => {
+
+            const percent = parseFloat(document.getElementById('resize-canvas').value);
+            if (percent >= 1) {
+                this._resizeCanvas(0, 0, percent);
+                return;
+            }
+
             const w = parseInt(document.getElementById('inputW').value);
             const h = parseInt(document.getElementById('inputH').value);
             if (w > 0 && h > 0) this._resizeCanvas(w, h);
