@@ -2331,13 +2331,19 @@ _drawPixelOutline(ctx, pixels, layer) {
                     const allElements = document.querySelectorAll('body *');
                     // Apply styles to each element
                     allElements.forEach(element => {
-                        element.style.color = '#999';
+                        if(element.id != 'main-canvas') { 
+                            element.style.color = '#fff';
+                            element.style.backgroundColor = '#333';
+                        }
                     });
                 } else {
                     const allElements = document.querySelectorAll('body *');
                     // Apply styles to each element
                     allElements.forEach(element => {
-                        element.style.color = '#fff';
+                        if(element.id != 'main-canvas') { 
+                            element.style.color = '#000';
+                            element.style.backgroundColor = '#b3b3b3';
+                        }
                     });
                 }  
         });
