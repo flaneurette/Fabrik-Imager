@@ -1,4 +1,4 @@
-# Fabrik Imager (Photo editor)
+# Graphicy Imager (Photo editor)
 
 <img src="Screenshot.png" />
 
