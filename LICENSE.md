@@ -1,1 +1,1 @@
-Fabrik Imager is free to use, modify, adapt. Fabrik Imager is without warranty. The authors cannot be held responsibile for any damage or liability, especially occuring with the use of the Fabrik Imager, it's code, modifications, uses, etc. Use at your own risk.
+Graphia is free to use, modify, adapt. Graphia is without warranty. The authors cannot be held responsibile for any damage or liability, especially occuring with the use of the Graphia, it's code, modifications, uses, etc. Use at your own risk.
