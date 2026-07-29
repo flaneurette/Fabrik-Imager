@@ -1,4 +1,4 @@
-# Graphicy Photo editor
+# Graphia Photo editor
 
 <img src="Screenshot.png" />
 
