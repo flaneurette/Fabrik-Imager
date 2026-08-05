@@ -1202,7 +1202,7 @@
     }
 
     _deleteLayer(idx) {
-        if (this.layers.length <= 1) return;
+        if (this.layers.length < 1) return;
         
         this.saveState();
         
@@ -1214,7 +1214,7 @@
             } else if (idx === this.activeIdx) {
                 this.activeIdx = Math.min(this.activeIdx, this.layers.length - 1);
             }
-            
+
             this._refreshLayersPanel();
             this._render();
         }
@@ -1234,7 +1234,7 @@
         
         this.layers.splice(idx + 1, 0, layer);
         this.activeIdx = idx + 1;
-        
+
         this._refreshLayersPanel();
         this._render();
     }
@@ -3445,6 +3445,12 @@
         inp.accept = 'image/png,image/*';
         inp.onchange = () => {
             const file = inp.files[0]; if (!file) return;
+            
+            // delete all layers first
+            this.layers.forEach(idx => {     
+                this._deleteLayer(idx);
+            });
+
             const url  = URL.createObjectURL(file);
             const img  = new Image();
             img.onload = () => {
